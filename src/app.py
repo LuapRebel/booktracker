@@ -1,11 +1,14 @@
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header
 
+from books import BookScreen
 from db import db
 
 
 class BookTracker(App):
     CSS_PATH = "app.tcss"
+
+    SCREENS = {"books": BookScreen}
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -13,6 +16,10 @@ class BookTracker(App):
 
     def on_mount(self) -> None:
         self.theme = "dracula"
+        self.push_screen(BookScreen())
+
+    def _on_screen_resume(self) -> None:
+        self.push_screen(BookScreen())
 
     def on_close(self) -> None:
         db.close()
