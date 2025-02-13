@@ -10,6 +10,7 @@ from textual.widgets import (
     Footer,
     Header,
     Input,
+    Static,
 )
 
 from db import db
@@ -56,6 +57,75 @@ class BookAddScreen(ModalScreen):
             self.app.push_screen("books")
 
     def action_push_books(self) -> None:
+        self.app.push_screen(BookScreen())
+
+
+class BookDeleteScreen(ModalScreen):
+    """Screen to delete a Book given an ID"""
+
+    BINDINGS = [("escape", "push_books", "Books")]
+
+    def __init__(self, cell_value: str) -> None:
+        super().__init__()
+        self.cell_value = cell_value
+
+    def compose(self) -> ComposeResult:
+        with Container(id="book-delete-screen"):
+            yield Input(placeholder="ID", id="id-delete")
+            yield Button("Delete", id="delete-submit")
+            yield Footer()
+
+    def on_mount(self) -> None:
+        if self.cell_value:
+            cur = db.cursor()
+            book = cur.execute(
+                "SELECT * FROM books WHERE id=?", (self.cell_value,)
+            ).fetchone()
+            input = self.query_one("#id-delete", Input)
+            input.value = str(book.get("id", ""))
+        else:
+            self.app.push_screen(BookScreen())
+
+    @on(Button.Pressed, "#delete-submit")
+    def delete_book_pressed(self) -> None:
+        def check_delete(delete: bool | None) -> None:
+            if delete:
+                cur.execute("DELETE FROM books WHERE id=?", (id.value,))
+                db.commit()
+            id.clear()
+
+        id = self.query_one("#id-delete", Input)
+        value = id.value
+        cur = db.cursor()
+        book = cur.execute("SELECT * FROM books WHERE id=?", (value,)).fetchone()
+        if not book:
+            self.notify(f"There is no book with ID = {value}")
+            id.clear()
+            self.app.push_screen(BookDeleteScreen(value))
+        else:
+            self.app.push_screen(BookDeleteConfirmationScreen(), check_delete)
+
+    def action_push_books(self) -> None:
+        self.app.push_screen(BookScreen())
+
+
+class BookDeleteConfirmationScreen(ModalScreen[bool]):
+    """Widget providing dialog box to allow users to delete a book or cancel"""
+
+    BINDINGS = [("escape", "app.pop_screen", "Cancel")]
+
+    def compose(self) -> ComposeResult:
+        with Container(id="book-delete-widget"):
+            yield Static("Are you sure you want to delete?")
+            yield Button("Yes", id="delete-book")
+            yield Button("No", id="cancel-delete-book")
+            yield Footer()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "delete-book":
+            self.dismiss(True)
+        else:
+            self.dismiss(False)
         self.app.push_screen(BookScreen())
 
 
@@ -212,7 +282,7 @@ class BookScreen(Screen):
         ("f", "push_filter", "Filter"),
         ("a", "push_add", "Add"),
         ("e", "push_edit", "Edit"),
-        # ("d", "push_delete", "Delete"),
+        ("d", "push_delete", "Delete"),
         # ("s", "push_stats", "Stats"),
     ]
 
@@ -259,3 +329,12 @@ class BookScreen(Screen):
         else:
             if self.cell_coordinate.column == 0:
                 self.app.push_screen(BookEditScreen(self.cell_value))
+
+    def action_push_delete(self) -> None:
+        try:
+            int(self.cell_value)
+        except ValueError:
+            pass
+        else:
+            if self.cell_coordinate.column == 0:
+                self.app.push_screen(BookDeleteScreen(self.cell_value))
