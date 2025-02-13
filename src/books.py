@@ -2,7 +2,7 @@ from pydantic import ValidationError
 from textual import on
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal
-from textual.screen import Screen
+from textual.screen import ModalScreen, Screen
 from textual.widget import Widget
 from textual.widgets import (
     Button,
@@ -20,6 +20,43 @@ def load_books() -> list[Book]:
     cur = db.cursor()
     data = cur.execute("SELECT * FROM books ORDER BY id DESC").fetchall()
     return [Book(**d) for d in data]
+
+
+class BookAddScreen(ModalScreen):
+    """Modal screen to provide inputs to create a new Book"""
+
+    BINDINGS = [
+        ("escape", "push_books", "Books"),
+    ]
+
+    def compose(self) -> ComposeResult:
+        with Container(id="add-screen"):
+            yield BookEditWidget()
+            yield Button("Submit", id="add")
+            yield Footer()
+
+    @on(Button.Pressed, "#add")
+    def book_submit_pressed(self):
+        inputs = self.query(Input)
+        validation_dict = {i.id.replace("-", "_"): i.value for i in inputs}
+        try:
+            Book(**validation_dict)
+        except ValidationError as e:
+            for err in e.errors():
+                self.notify(f"{err['loc'][0]}: {err['msg']}")
+        else:
+            cur = db.cursor()
+            cur.execute(
+                f"INSERT INTO books({", ".join(validation_dict.keys())}) VALUES (?, ?, ?, ?, ?)",
+                tuple(validation_dict.values()),
+            )
+            db.commit()
+            for i in inputs:
+                i.clear()
+            self.app.push_screen("books")
+
+    def action_push_books(self) -> None:
+        self.app.push_screen(BookScreen())
 
 
 class BookEditWidget(Widget):
@@ -173,7 +210,7 @@ class BookScreen(Screen):
 
     BINDINGS = [
         ("f", "push_filter", "Filter"),
-        # ("a", "push_add", "Add"),
+        ("a", "push_add", "Add"),
         ("e", "push_edit", "Edit"),
         # ("d", "push_delete", "Delete"),
         # ("s", "push_stats", "Stats"),
@@ -210,6 +247,9 @@ class BookScreen(Screen):
 
     def action_push_filter(self) -> None:
         self.app.push_screen(BookFilterScreen())
+
+    def action_push_add(self) -> None:
+        self.app.push_screen(BookAddScreen())
 
     def action_push_edit(self) -> None:
         try:
