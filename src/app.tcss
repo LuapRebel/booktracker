@@ -3,3 +3,21 @@ Header {
     text-style: bold;
     content-align: center middle;
   }
+
+BookFilterScreen {
+    height: auto;
+}
+
+BookEditWidget {
+  height: 15;
+}
+
+#filter-container {
+  dock: top;
+  height: auto;
+}
+
+.column {
+  width: 1fr;
+  margin: 1;
+}

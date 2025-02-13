@@ -1,14 +1,17 @@
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header
 
-from books import BookScreen
+from books import BookFilterScreen, BookScreen
 from db import db
 
 
 class BookTracker(App):
     CSS_PATH = "app.tcss"
 
-    SCREENS = {"books": BookScreen}
+    SCREENS = {
+        "books": BookScreen,
+        "filter": BookFilterScreen,
+    }
 
     def compose(self) -> ComposeResult:
         yield Header()
