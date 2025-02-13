@@ -15,6 +15,7 @@ from textual.widgets import (
 
 from db import db
 from schema import Book
+from stats import BookStatsScreen
 
 
 def load_books() -> list[Book]:
@@ -283,7 +284,7 @@ class BookScreen(Screen):
         ("a", "push_add", "Add"),
         ("e", "push_edit", "Edit"),
         ("d", "push_delete", "Delete"),
-        # ("s", "push_stats", "Stats"),
+        ("s", "push_stats", "Stats"),
     ]
 
     def compose(self) -> ComposeResult:
@@ -292,8 +293,8 @@ class BookScreen(Screen):
         yield Footer()
 
     def on_mount(self) -> None:
-        books = load_books()
-        rows = [book.model_dump().values() for book in books]
+        self.books = load_books()
+        rows = [book.model_dump().values() for book in self.books]
         table = self.query_one("#books-table", DataTable)
         table.clear(columns=True)
         columns = [*Book.model_fields.keys(), *Book.model_computed_fields.keys()]
@@ -302,8 +303,8 @@ class BookScreen(Screen):
         table.zebra_stripes = True
 
     def _on_screen_resume(self) -> None:
-        books = load_books()
-        rows = [book.model_dump().values() for book in books]
+        self.books = load_books()
+        rows = [book.model_dump().values() for book in self.books]
         table = self.query_one("#books-table", DataTable)
         table.clear(columns=True)
         columns = [*Book.model_fields.keys(), *Book.model_computed_fields.keys()]
@@ -338,3 +339,6 @@ class BookScreen(Screen):
         else:
             if self.cell_coordinate.column == 0:
                 self.app.push_screen(BookDeleteScreen(self.cell_value))
+
+    def action_push_stats(self) -> None:
+        self.app.push_screen(BookStatsScreen(self.books))
