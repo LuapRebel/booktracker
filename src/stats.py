@@ -1,5 +1,7 @@
 from datetime import datetime
+from itertools import product
 from statistics import mean
+from typing import Optional
 
 from rich.text import Text
 from textual.app import ComposeResult
@@ -17,7 +19,9 @@ class BookStats:
 
     def __init__(self, books: list[Book]):
         self.books = books
-        self.ymd = [self.get_ymd(book) for book in books]
+        self.ymd = [
+            self.get_ymd(book) for book in books if self.get_ymd(book) is not None
+        ]
 
     def get_ymd(self, book: Book) -> Book:
         if book.status == "COMPLETED" and book.date_completed:
@@ -28,57 +32,43 @@ class BookStats:
                 book.days_to_read,
             )
 
-    def flatten(self, l: list) -> list:
-        out = []
-        for item in l:
-            if isinstance(item, list):
-                out.extend(self.flatten(item))
-            else:
-                out.append(item)
-        return out
+    def detailed_stats(self) -> list[dict]:
+        years = {book[0] for book in self.ymd}
+        months = {book[1] for book in self.ymd}
+        return [self.month_stats(*item) for item in product(years, months)]
 
-    def complete_stats(self) -> list[dict]:
-        years = {book[0] for book in self.ymd if book}
-        stats = [
-            [self.month_stats(year, month) for month in range(1, 13)] for year in years
-        ]
-        return self.flatten(stats)
-
-    def month_stats(self, year: int, month: int) -> list[dict]:
-        books_read = [
-            book for book in self.ymd if book and book[0] == year and book[1] == month
-        ]
+    def month_stats(self, year: int, month: int) -> dict[str, int | Optional[float]]:
+        books_read = [book for book in self.ymd if book[0] == year and book[1] == month]
         count = len(books_read)
         if count:
             avg_days_to_read = round(mean([book[2] for book in books_read]), 2)
         else:
             avg_days_to_read = None
-        return [
-            {
-                "year": year,
-                "month": month,
-                "count": count,
-                "avg_days_to_read": avg_days_to_read,
-            }
-        ]
+        return {
+            "year": year,
+            "month": month,
+            "count": count,
+            "avg_days_to_read": avg_days_to_read,
+        }
 
-    def year_stats(self, year: int, complete: bool = False) -> list[dict]:
-        books_read = [book for book in self.ymd if book and book[0] == year]
+    def year_stats(self, year: int) -> dict[str, int | Optional[float]]:
+        books_read = [book for book in self.ymd if book[0] == year]
         count = len(books_read)
+        num_months = len({book[1] for book in self.ymd if book[0] == year})
+        num_weeks = num_months * 4.33
+        books_per_month = round(count / num_months, 2)
+        books_per_week = round(count / num_weeks, 2)
         if count:
             avg_days_to_read = round(mean([book[2] for book in books_read]), 2)
         else:
             avg_days_to_read = None
-        if complete:
-            month_stats = [self.month_stats(year, month) for month in range(1, 13)]
-            return self.flatten(month_stats)
-        return [
-            {
-                "year": year,
-                "count": count,
-                "avg_days_to_read": avg_days_to_read,
-            }
-        ]
+        return {
+            "year": year,
+            "count": count,
+            "books_per_month": books_per_month,
+            "books_per_week": books_per_week,
+            "avg_days_to_read": avg_days_to_read,
+        }
 
 
 class BookStatsScreen(Screen):
