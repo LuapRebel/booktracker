@@ -29,31 +29,33 @@ BookStatsScreen {
 #yearly-stats {
   content-align: center middle;
   padding: 1;
+  margin: 1;
 }
 
 #stats-table-year-label {
-  width: 50%;
+  width: 45%;
   text-align: center;
 }
 
 #stats-table-year {
-  width: 50%;
+  width: 45%;
   align: center middle;
   border: solid white;
 }
 
-#complete-stats {
+#detailed-stats {
   content-align: center middle;
   padding: 1;
+  margin: 1;
 }
 
-#stats-table-complete-label {
-  width: 50%;
+#stats-table-detailed-label {
+  width: 30%;
   text-align: center;
 }
 
-#stats-table-complete {
-  width: 50%;
+#stats-table-detailed {
+  width: 30%;
   align: center middle;
   border: solid white;
 }
