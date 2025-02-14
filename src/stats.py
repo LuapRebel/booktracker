@@ -13,11 +13,9 @@ class BookStats:
 
     def __init__(self, books: list[Book]):
         self.books = books
-        self.ymd = [
-            self.get_ymd(book) for book in books if self.get_ymd(book) is not None
-        ]
+        self.ymd = [self._get_ymd(book) for book in books if self._get_ymd(book)[0]]
 
-    def get_ymd(self, book: Book) -> Book:
+    def _get_ymd(self, book: Book) -> tuple[int, int, int]:
         if book.status == "COMPLETED" and book.date_completed:
             ymd = datetime.fromisoformat(book.date_completed)
             return (
@@ -25,6 +23,7 @@ class BookStats:
                 ymd.month,
                 book.days_to_read,
             )
+        return (0, 0, 0)
 
     def detailed_stats(self) -> list[dict]:
         years = {book[0] for book in self.ymd}

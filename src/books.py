@@ -262,7 +262,7 @@ class BookFilterScreen(Screen):
         table.clear(columns=True)
 
     def on_data_table_cell_highlighted(self, event: DataTable.CellHighlighted) -> None:
-        self.cell_value = str(event.value) or ""
+        self.cell_value = str(event.value)
         self.cell_coordinate = event.coordinate
 
     def action_push_edit(self) -> None:
@@ -287,6 +287,7 @@ class BookStatsScreen(Screen):
     def __init__(self, books: list[Book]) -> None:
         super().__init__()
         self.books = books
+        self.stats = BookStats(self.books)
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -300,35 +301,33 @@ class BookStatsScreen(Screen):
         yield Footer()
 
     def on_mount(self) -> None:
-        detailed_stats = BookStats(self.books).detailed_stats()
-        detailed_table = self.query_one("#stats-table-detailed", DataTable)
-        detailed_table.clear(columns=True)
-        detailed_columns = [
-            self._style_table_column(key) for key in detailed_stats[0].keys()
-        ]
-        detailed_table.add_columns(*detailed_columns)
-        detailed_rows = [stat.values() for stat in detailed_stats]
-        for row in detailed_rows:
-            styled_row = [Text(str(cell), justify="center") for cell in row]
-            detailed_table.add_row(*styled_row)
-        detailed_table.zebra_stripes = True
-        years = {stat["year"] for stat in detailed_stats}
-        year_table = self.query_one("#stats-table-year", DataTable)
-        year_table.clear(columns=True)
-        year_table_stats = [BookStats(self.books).year_stats(year) for year in years]
-        year_table_columns = [
-            self._style_table_column(key) for key in year_table_stats[0].keys()
-        ]
-        year_table.add_columns(*year_table_columns)
-        year_table_rows = [stat.values() for stat in year_table_stats]
-        for row in year_table_rows:
-            styled_row = [Text(str(cell), justify="center") for cell in row]
-            year_table.add_row(*styled_row)
-        year_table.zebra_stripes = True
+        self._create_yearly_stats_table()
+        self._create_detailed_stats_table()
 
     def _style_table_column(self, column: str) -> Text:
         padded_title = column.replace("_", " ").title().center(len(column) + 2)
         return Text(padded_title, justify="center")
+
+    def _generate_formatted_table(self, table: DataTable, stats: list[dict]) -> None:
+        table.clear(columns=True)
+        columns = [self._style_table_column(key) for key in stats[0].keys()]
+        table.add_columns(*columns)
+        rows = [stat.values() for stat in stats]
+        for row in rows:
+            styled_row = [Text(str(cell), justify="center") for cell in row]
+            table.add_row(*styled_row)
+        table.zebra_stripes = True
+
+    def _create_detailed_stats_table(self) -> None:
+        table = self.query_one("#stats-table-detailed", DataTable)
+        stats = self.stats.detailed_stats()
+        self._generate_formatted_table(table, stats)
+
+    def _create_yearly_stats_table(self) -> None:
+        table = self.query_one("#stats-table-year", DataTable)
+        years = {stat["year"] for stat in self.stats.detailed_stats()}
+        stats = [self.stats.year_stats(year) for year in years]
+        self._generate_formatted_table(table, stats)
 
     def action_push_books(self) -> None:
         self.app.push_screen(BookScreen())
@@ -351,16 +350,12 @@ class BookScreen(Screen):
         yield Footer()
 
     def on_mount(self) -> None:
-        self.books = load_books()
-        rows = [book.model_dump().values() for book in self.books]
-        table = self.query_one("#books-table", DataTable)
-        table.clear(columns=True)
-        columns = [*Book.model_fields.keys(), *Book.model_computed_fields.keys()]
-        table.add_columns(*columns)
-        table.add_rows(rows)
-        table.zebra_stripes = True
+        self._create_books_table()
 
     def _on_screen_resume(self) -> None:
+        self._create_books_table()
+
+    def _create_books_table(self) -> None:
         self.books = load_books()
         rows = [book.model_dump().values() for book in self.books]
         table = self.query_one("#books-table", DataTable)
@@ -371,7 +366,7 @@ class BookScreen(Screen):
         table.zebra_stripes = True
 
     def on_data_table_cell_highlighted(self, event: DataTable.CellHighlighted) -> None:
-        self.cell_value = str(event.value) or ""
+        self.cell_value = str(event.value)
         self.cell_coordinate = event.coordinate
 
     def action_push_filter(self) -> None:
