@@ -1,5 +1,4 @@
 from datetime import datetime
-from itertools import product
 from statistics import mean
 from typing import Optional
 
@@ -26,9 +25,8 @@ class BookStats:
         return (0, 0, 0)
 
     def detailed_stats(self) -> list[dict]:
-        years = {book[0] for book in self.ymd}
-        months = {book[1] for book in self.ymd}
-        return [self.month_stats(*item) for item in product(years, months)]
+        yms = sorted({(ymd[0], ymd[1]) for ymd in self.ymd}, reverse=True)
+        return [self.month_stats(*ym) for ym in yms]
 
     def month_stats(self, year: int, month: int) -> dict[str, int | Optional[float]]:
         books_read = [book for book in self.ymd if book[0] == year and book[1] == month]

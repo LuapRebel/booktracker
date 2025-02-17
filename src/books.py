@@ -325,7 +325,9 @@ class BookStatsScreen(Screen):
 
     def _create_yearly_stats_table(self) -> None:
         table = self.query_one("#stats-table-year", DataTable)
-        years = {stat["year"] for stat in self.stats.detailed_stats()}
+        years = sorted(
+            {stat["year"] for stat in self.stats.detailed_stats()}, reverse=True
+        )
         stats = [self.stats.year_stats(year) for year in years]
         self._generate_formatted_table(table, stats)
 
