@@ -1,62 +1,116 @@
 Header {
-    height: 3;
-    text-style: bold;
-    content-align: center middle;
-  }
-
-BookFilterScreen {
-    height: auto;
+  height: 3;
+  text-style: bold;
 }
 
-BookEditWidget {
-  height: 15;
-}
-
-#filter-container {
-  dock: top;
-  height: auto;
-}
-
-.column {
-  width: 1fr;
-  margin: 1;
-}
-
-BookStatsScreen {
+#books-table-container {
   align: center top;
 }
 
-#yearly-stats {
-  content-align: center middle;
-  padding: 1;
-  margin: 1;
-}
-
-#stats-table-year-label {
-  width: 45%;
-  text-align: center;
-}
-
-#stats-table-year {
-  width: 45%;
-  align: center middle;
+#books-table {
+  width: auto;
   border: solid white;
 }
 
-#detailed-stats {
-  content-align: center middle;
-  padding: 1;
+BookAddScreen {
+  align: center middle;
+}
+
+#add-screen-container {
+  border: solid white;
+  height: auto;
+  width: 30%;
+}
+
+BookDeleteScreen {
+  align: center middle;
+}
+
+#book-delete-container {
+  border: solid white;
+  height: auto;
+  width: 10%;
+}
+
+BookDeleteConfirmationScreen {
+  align: center middle;
+}
+
+#book-delete-confirmation-container{
+  border: solid white;
+  height: auto;
+  align: center top;
+  width: 20%;
+}
+
+#book-delete-confirmation-container Button {
   margin: 1;
 }
 
-#stats-table-detailed-label {
-  width: 30%;
+#book-delete-confirmation-container Static {
   text-align: center;
 }
 
-#stats-table-detailed {
-  width: 30%;
+BookEditScreen {
   align: center middle;
+}
+
+#book-edit-screen-container {
   border: solid white;
+  height: auto;
+  width: 30%;
+}
+
+BookFilterScreen {
+  align: center middle;
+}
+
+#book-filter-input-group-container {
+  align: center middle;
+}
+
+#book-filter-input-group-container Input {
+  width: 33%;
+}
+
+#book-filter-submit {
+  width: 15%;
+}
+
+
+#book-filter-table-container {
+  align: center top;
+}
+
+#book-filter-table {
+  width: auto;
+}
+
+BookStatsScreen {
+  align: center middle;
+  width: auto;
+}
+
+#stats-yearly-label {
+  margin: 1 0 0 0;
+  width: auto;
+}
+
+#stats-yearly-table {
+  height: auto;
+  width: auto;
+  border: solid gray;
+}
+
+#stats-detailed-label {
+  margin: 1 0 0 0;
+  width: auto;
+}
+
+#stats-detailed-table {
+  height: auto;
+  width: auto;
+  border: solid gray;
+  content-align: center middle;
 }
 

@@ -2,9 +2,8 @@ from pydantic import ValidationError
 from rich.text import Text
 from textual import on
 from textual.app import ComposeResult
-from textual.containers import Center, Container, Horizontal
+from textual.containers import Center, Container, HorizontalGroup, Vertical
 from textual.screen import ModalScreen, Screen
-from textual.widget import Widget
 from textual.widgets import (
     Button,
     DataTable,
@@ -35,8 +34,12 @@ class BookAddScreen(ModalScreen):
     ]
 
     def compose(self) -> ComposeResult:
-        with Container(id="add-screen"):
-            yield BookEditWidget()
+        with Container(id="add-screen-container"):
+            yield Input(placeholder="Title", id="title")
+            yield Input(placeholder="Author (Lastname, First)", id="author")
+            yield Input(placeholder="Status (TBR, IN_PROGRESS, COMPLETED)", id="status")
+            yield Input(placeholder="Date Started (YYYY-MM-DD)", id="date-started")
+            yield Input(placeholder="Date Completed (YYYY-MM-DD)", id="date-completed")
             yield Button("Submit", id="add")
             yield Footer()
 
@@ -74,7 +77,7 @@ class BookDeleteScreen(ModalScreen):
         self.cell_value = cell_value
 
     def compose(self) -> ComposeResult:
-        with Container(id="book-delete-screen"):
+        with Container(id="book-delete-container"):
             yield Input(placeholder="ID", id="id-delete")
             yield Button("Delete", id="delete-submit")
             yield Footer()
@@ -119,10 +122,11 @@ class BookDeleteConfirmationScreen(ModalScreen[bool]):
     BINDINGS = [("escape", "app.pop_screen", "Cancel")]
 
     def compose(self) -> ComposeResult:
-        with Container(id="book-delete-widget"):
+        with Container(id="book-delete-confirmation-container"):
             yield Static("Are you sure you want to delete?")
-            yield Button("Yes", id="delete-book")
-            yield Button("No", id="cancel-delete-book")
+            with HorizontalGroup(id="book-delete-confirmation-button"):
+                yield Button("Yes", id="delete-book-yes")
+                yield Button("No", id="delete-book-no")
             yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -131,18 +135,6 @@ class BookDeleteConfirmationScreen(ModalScreen[bool]):
         else:
             self.dismiss(False)
         self.app.push_screen(BookScreen())
-
-
-class BookEditWidget(Widget):
-    """Widget to edit book information. Used in both Add and Edit scenarios."""
-
-    def compose(self) -> ComposeResult:
-        with Container(id="book-edit-widget"):
-            yield Input(placeholder="Title", id="title")
-            yield Input(placeholder="Author (Lastname, First)", id="author")
-            yield Input(placeholder="Status (TBR, IN_PROGRESS, COMPLETED)", id="status")
-            yield Input(placeholder="Date Started (YYYY-MM-DD)", id="date-started")
-            yield Input(placeholder="Date Completed (YYYY-MM-DD)", id="date-completed")
 
 
 class BookEditScreen(Screen):
@@ -157,8 +149,13 @@ class BookEditScreen(Screen):
         self.cell_value = cell_value
 
     def compose(self) -> ComposeResult:
-        yield BookEditWidget()
-        yield Button("Submit", id="edit-submit")
+        with Container(id="book-edit-screen-container"):
+            yield Input(placeholder="Title", id="title")
+            yield Input(placeholder="Author (Lastname, First)", id="author")
+            yield Input(placeholder="Status (TBR, IN_PROGRESS, COMPLETED)", id="status")
+            yield Input(placeholder="Date Started (YYYY-MM-DD)", id="date-started")
+            yield Input(placeholder="Date Completed (YYYY-MM-DD)", id="date-completed")
+            yield Button("Submit", id="edit-submit")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -219,37 +216,35 @@ class BookFilterScreen(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Horizontal(
-            Input(
+        with HorizontalGroup(id="book-filter-input-group-container"):
+            yield Input(
                 placeholder="id, title, author, status, date_started, date_completed",
-                id="filter-field",
-                classes="column",
-            ),
-            Input(placeholder="Search term", id="filter-value", classes="column"),
-            Button("Submit", id="filter-submit", classes="column"),
-            id="filter-container",
-        )
-        yield DataTable(id="filter-table")
+                id="book-filter-field",
+            )
+            yield Input(placeholder="Search term", id="book-filter-value")
+            yield Button("Submit", id="book-filter-submit")
+        with Container(id="book-filter-table-container"):
+            yield DataTable(id="book-filter-table")
         yield Footer()
 
-    @on(Button.Pressed, "#filter-submit")
+    @on(Button.Pressed, "#book-filter-submit")
     def filter_submit_pressed(self) -> None:
-        field = self.query_one("#filter-field", Input).value
-        value = self.query_one("#filter-value", Input).value
+        field = self.query_one("#book-filter-field", Input).value
+        value = self.query_one("#book-filter-value", Input).value
         if field and value:
             read_sql = f"SELECT * FROM books WHERE {field} LIKE ?"
             binding = (f"%{value}%",)
             cur = db.cursor()
             data = cur.execute(read_sql, binding).fetchall()
             books = [Book(**d) for d in data]
-            table = self.query_one("#filter-table", DataTable)
+            table = self.query_one("#book-filter-table", DataTable)
             table.clear(columns=True)
             columns = [*Book.model_fields.keys(), *Book.model_computed_fields.keys()]
             rows = [book.model_dump().values() for book in books]
             table.add_columns(*columns)
             table.add_rows(rows)
             table.zebra_stripes = True
-            self.focus_next("#filter-table")
+            self.focus_next("#book-filter-table")
             self.clear_inputs()
 
     def clear_inputs(self) -> None:
@@ -258,7 +253,7 @@ class BookFilterScreen(Screen):
             i.clear()
 
     def _on_screen_resume(self) -> None:
-        table = self.query_one("#filter-table", DataTable)
+        table = self.query_one("#book-filter-table", DataTable)
         table.clear(columns=True)
 
     def on_data_table_cell_highlighted(self, event: DataTable.CellHighlighted) -> None:
@@ -291,13 +286,16 @@ class BookStatsScreen(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        with Center(id="yearly-stats"):
-            yield Label("BookTracker Yearly Stats", id="stats-table-year-label")
-            yield DataTable(id="stats-table-year")
-        yield Rule(line_style="heavy")
-        with Center(id="detailed-stats"):
-            yield Label("BookTracker Detailed Stats", id="stats-table-detailed-label")
-            yield DataTable(id="stats-table-detailed")
+        yield Label(
+            "BookTracker Yearly Stats",
+            id="stats-yearly-label",
+        )
+        yield DataTable(id="stats-yearly-table")
+        yield Label(
+            "BookTracker Detailed Stats",
+            id="stats-detailed-label",
+        )
+        yield DataTable(id="stats-detailed-table")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -319,12 +317,12 @@ class BookStatsScreen(Screen):
         table.zebra_stripes = True
 
     def _create_detailed_stats_table(self) -> None:
-        table = self.query_one("#stats-table-detailed", DataTable)
+        table = self.query_one("#stats-detailed-table", DataTable)
         stats = self.stats.detailed_stats()
         self._generate_formatted_table(table, stats)
 
     def _create_yearly_stats_table(self) -> None:
-        table = self.query_one("#stats-table-year", DataTable)
+        table = self.query_one("#stats-yearly-table", DataTable)
         years = sorted(
             {stat["year"] for stat in self.stats.detailed_stats()}, reverse=True
         )
@@ -348,7 +346,8 @@ class BookScreen(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield DataTable(id="books-table")
+        with Container(id="books-table-container"):
+            yield DataTable(id="books-table")
         yield Footer()
 
     def on_mount(self) -> None:
