@@ -37,9 +37,21 @@ Header {
   align: center middle;
 
   .delete-container {
+      align: center top;
       border: round #767676;
       height: auto;
-      width: 10%;
+      width: auto;
+      max-width: 20%;
+
+      Static {
+        text-align: center;
+        margin: 1;
+      }
+
+      #delete-submit {
+        margin: 1;
+        width: 100%;
+      }
   }
   
 }

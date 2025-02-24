@@ -3,6 +3,8 @@ from enum import StrEnum
 import re
 from typing import Optional, Self
 
+
+from db import db
 from pydantic import BaseModel, computed_field, field_validator, model_validator
 
 
@@ -50,3 +52,9 @@ class Book(BaseModel, extra="allow"):
             return (dc - ds).days + 1  # inclusive
         else:
             return None
+
+    @classmethod
+    def load_books(self) -> list["Book"]:
+        cur = db.cursor()
+        data = cur.execute("SELECT * FROM books ORDER BY id DESC").fetchall()
+        return [Book(**book) for book in data]

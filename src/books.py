@@ -19,12 +19,6 @@ from schema import Book
 from stats import BookStats
 
 
-def load_books() -> list[Book]:
-    cur = db.cursor()
-    data = cur.execute("SELECT * FROM books ORDER BY id DESC").fetchall()
-    return [Book(**d) for d in data]
-
-
 class BookAddScreen(ModalScreen):
     """Modal screen to provide inputs to create a new Book"""
 
@@ -63,10 +57,36 @@ class BookAddScreen(ModalScreen):
             db.commit()
             for i in inputs:
                 i.clear()
-            self.app.push_screen("books")
+            self.app.push_screen(BookScreen())
 
     def action_push_books(self) -> None:
         self.app.push_screen(BookScreen())
+
+
+class EditableDeletableScreen(Screen):
+
+    def on_data_table_cell_highlighted(self, event: DataTable.CellHighlighted) -> None:
+        self.cell_value = str(event.value)
+        self.cell_coordinate = event.coordinate
+
+    def _get_book_from_cell_value(self) -> Book:
+        if self.cell_value:
+            try:
+                int_value: int = int(self.cell_value)
+            except ValueError:
+                pass
+            else:
+                if self.cell_coordinate.column == 0:
+                    book: Book = [b for b in self.books if b.id == int_value][0]
+                    return book
+
+    def action_push_edit(self) -> None:
+        book: Book = self._get_book_from_cell_value()
+        self.app.push_screen(BookEditScreen(book))
+
+    def action_push_delete(self) -> None:
+        book: Book = self._get_book_from_cell_value()
+        self.app.push_screen(BookDeleteScreen(book))
 
 
 class BookDeleteScreen(ModalScreen):
@@ -74,46 +94,33 @@ class BookDeleteScreen(ModalScreen):
 
     BINDINGS = [("escape", "push_books", "Books")]
 
-    def __init__(self, cell_value: str) -> None:
+    def __init__(self, book: Book) -> None:
         super().__init__()
-        self.cell_value = cell_value
+        self.book: Book = book
 
     def compose(self) -> ComposeResult:
         with Container(classes="delete-container", id="book-delete-container"):
-            yield Input(placeholder="ID", id="id-delete")
+            yield Static(self.book.id, id="id-delete")
             yield Button("Delete", id="delete-submit")
             yield Footer()
 
     def on_mount(self) -> None:
         self.add_class("delete-screen")
-        if self.cell_value:
-            cur = db.cursor()
-            book = cur.execute(
-                "SELECT * FROM books WHERE id=?", (self.cell_value,)
-            ).fetchone()
-            input = self.query_one("#id-delete", Input)
-            input.value = str(book.get("id", ""))
+        if self.book:
+            input = self.query_one("#id-delete", Static)
+            input.update(f"Delete {self.book.title}?")
         else:
-            self.app.push_screen(BookScreen())
+            self.app.push_screen(self.app.screen_stack[-2])
 
     @on(Button.Pressed, "#delete-submit")
     def delete_book_pressed(self) -> None:
         def check_delete(delete: bool | None) -> None:
             if delete:
-                cur.execute("DELETE FROM books WHERE id=?", (id.value,))
+                cur = db.cursor()
+                cur.execute("DELETE FROM books WHERE id=?", (self.book.id,))
                 db.commit()
-            id.clear()
 
-        id = self.query_one("#id-delete", Input)
-        value = id.value
-        cur = db.cursor()
-        book = cur.execute("SELECT * FROM books WHERE id=?", (value,)).fetchone()
-        if not book:
-            self.notify(f"There is no book with ID = {value}")
-            id.clear()
-            self.app.push_screen(BookDeleteScreen(value))
-        else:
-            self.app.push_screen(BookDeleteConfirmationScreen(), check_delete)
+        self.app.push_screen(BookDeleteConfirmationScreen(), check_delete)
 
     def action_push_books(self) -> None:
         self.app.push_screen(BookScreen())
@@ -139,23 +146,23 @@ class BookDeleteConfirmationScreen(ModalScreen[bool]):
         self.add_class("delete-confirmation-screen")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "delete-book":
+        if event.button.id == "delete-book-yes":
             self.dismiss(True)
         else:
             self.dismiss(False)
         self.app.push_screen(BookScreen())
 
 
-class BookEditScreen(Screen):
+class BookEditScreen(EditableDeletableScreen):
     """Modal Screen to provide inputs to edit an existing book"""
 
     BINDINGS = [
-        ("escape", "push_books", "Books"),
+        ("escape", "app.pop_screen", "Cancel"),
     ]
 
-    def __init__(self, cell_value: str) -> None:
+    def __init__(self, book: Book) -> None:
         super().__init__()
-        self.cell_value = cell_value
+        self.book = book
 
     def compose(self) -> ComposeResult:
         with Container(
@@ -167,20 +174,16 @@ class BookEditScreen(Screen):
             yield Input(placeholder="Date Started (YYYY-MM-DD)", id="date-started")
             yield Input(placeholder="Date Completed (YYYY-MM-DD)", id="date-completed")
             yield Button("Submit", id="edit-submit")
-        yield Footer()
+            yield Footer()
 
     def on_mount(self) -> None:
         self.add_class("edit-screen")
-        if self.cell_value:
-            cur = db.cursor()
-            book = cur.execute(
-                "SELECT * FROM books WHERE id=?", (self.cell_value,)
-            ).fetchone()
+        if self.book:
             inputs = self.query(Input)
             for i in inputs:
                 if i.id:
                     key = i.id.replace("-", "_")
-                    i.value = book.get(key, "")
+                    i.value = str(self.book.model_dump().get(key, ""))
         else:
             self.app.push_screen(BookScreen())
 
@@ -195,35 +198,33 @@ class BookEditScreen(Screen):
         validation_dict = {i.id.replace("-", "_"): i.value for i in inputs}
         try:
             Book(**validation_dict)
-            update_values = []
-            update_sql = "SET "
-            for k, v in validation_dict.items():
-                update_sql += f"{k} = ?, "
-                update_values.append(v)
-            full_sql = f"""
-            UPDATE books
-            {update_sql[0:-2]}
-            WHERE id = {self.cell_value}
-            """
-            cursor = db.cursor()
-            cursor.execute(full_sql, update_values)
-            db.commit()
-            self.clear_inputs()
         except ValidationError as e:
             self.notify(str(e))
-        self.app.push_screen(BookScreen())
+        else:
+            sql_prefix = "UPDATE books SET"
+            sql_keys = ", ".join([f"{k} = ?" for k in validation_dict.keys()])
+            sql_values = tuple(validation_dict.values())
+            sql_suffix = f"WHERE id = {self.book.id}"
+            full_sql = f"{sql_prefix} {sql_keys} {sql_suffix}"
+            cursor = db.cursor()
+            cursor.execute(full_sql, sql_values)
+            db.commit()
+            self.clear_inputs()
+        finally:
+            self.app.push_screen(BookScreen())
 
     def action_push_books(self) -> None:
         self.clear_inputs()
         self.app.push_screen(BookScreen())
 
 
-class BookFilterScreen(Screen):
+class BookFilterScreen(EditableDeletableScreen):
     """Widget to filter books by field and search term"""
 
     BINDINGS = [
         ("escape", "push_books", "Books"),
         ("e", "push_edit", "Edit"),
+        ("d", "push_delete", "Delete"),
     ]
 
     def compose(self) -> ComposeResult:
@@ -261,14 +262,15 @@ class BookFilterScreen(Screen):
             binding = (f"%{value}%",)
             cur = db.cursor()
             data = cur.execute(read_sql, binding).fetchall()
-            books = [Book(**d) for d in data]
+            self.books = [Book(**d) for d in data]
             table = self.query_one("#book-filter-table", DataTable)
             table.clear(columns=True)
             columns = [*Book.model_fields.keys(), *Book.model_computed_fields.keys()]
-            rows = [book.model_dump().values() for book in books]
+            rows = [book.model_dump().values() for book in self.books]
             table.add_columns(*columns)
             table.add_rows(rows)
             table.zebra_stripes = True
+            table.border_title = f"'{value}' in {field}"
             self.focus_next("#book-filter-table")
             self.clear_inputs()
 
@@ -276,23 +278,6 @@ class BookFilterScreen(Screen):
         inputs = self.query(Input)
         for i in inputs:
             i.clear()
-
-    def _on_screen_resume(self) -> None:
-        table = self.query_one("#book-filter-table", DataTable)
-        table.clear(columns=True)
-
-    def on_data_table_cell_highlighted(self, event: DataTable.CellHighlighted) -> None:
-        self.cell_value = str(event.value)
-        self.cell_coordinate = event.coordinate
-
-    def action_push_edit(self) -> None:
-        try:
-            int(self.cell_value)
-        except ValueError:
-            pass
-        else:
-            if self.cell_coordinate.column == 0:
-                self.app.push_screen(BookEditScreen(self.cell_value))
 
     def action_push_books(self) -> None:
         self.clear_inputs()
@@ -354,7 +339,7 @@ class BookStatsScreen(Screen):
         self.app.push_screen(BookScreen())
 
 
-class BookScreen(Screen):
+class BookScreen(EditableDeletableScreen):
     """Widget to manage book collection."""
 
     BINDINGS = [
@@ -373,7 +358,7 @@ class BookScreen(Screen):
             yield Footer()
 
     def on_mount(self) -> None:
-        self.books = load_books()
+        self.books = Book.load_books()
         self.add_class("class-screen")
         self._create_books_table()
 
@@ -389,33 +374,11 @@ class BookScreen(Screen):
         table.add_rows(rows)
         table.zebra_stripes = True
 
-    def on_data_table_cell_highlighted(self, event: DataTable.CellHighlighted) -> None:
-        self.cell_value = str(event.value)
-        self.cell_coordinate = event.coordinate
-
     def action_push_filter(self) -> None:
         self.app.push_screen(BookFilterScreen())
 
     def action_push_add(self) -> None:
         self.app.push_screen(BookAddScreen())
-
-    def action_push_edit(self) -> None:
-        try:
-            int(self.cell_value)
-        except ValueError:
-            pass
-        else:
-            if self.cell_coordinate.column == 0:
-                self.app.push_screen(BookEditScreen(self.cell_value))
-
-    def action_push_delete(self) -> None:
-        try:
-            int(self.cell_value)
-        except ValueError:
-            pass
-        else:
-            if self.cell_coordinate.column == 0:
-                self.app.push_screen(BookDeleteScreen(self.cell_value))
 
     def action_push_stats(self) -> None:
         self.app.push_screen(BookStatsScreen(self.books))
