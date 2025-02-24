@@ -3,114 +3,114 @@ Header {
   text-style: bold;
 }
 
-#books-table-container {
-  align: center top;
+.class-screen {
+  overflow-y: hidden;
+
+  #books-table-container {
+    align: center top;
+  }
+
+    .class-table {
+        width: auto;
+        margin: 0 0 5 0;
+        color: #c6c6c6;
+    }
+
+    #books-table {
+        margin: 0 0 2 0;
+        border: round #005fff;
+    }
+
 }
 
-#books-table {
-  width: auto;
-  border: solid white;
-}
-
-BookAddScreen {
+.add-screen {
   align: center middle;
+  
+  .add-screen-container {
+      border: round #767676;
+      height: auto;
+      width: 30%;
+  }
 }
 
-#add-screen-container {
-  border: solid white;
-  height: auto;
-  width: 30%;
-}
-
-BookDeleteScreen {
+.delete-screen {
   align: center middle;
+
+  .delete-container {
+      border: round #767676;
+      height: auto;
+      width: 10%;
+  }
+  
 }
 
-#book-delete-container {
-  border: solid white;
-  height: auto;
-  width: 10%;
-}
-
-BookDeleteConfirmationScreen {
+.delete-confirmation-screen {
   align: center middle;
+
+  .delete-confirmation-container {
+      border: round ansi_bright_red;
+      height: auto;
+      align: center top;
+      width: 20%;
+
+      Button {
+          margin: 1;
+      }
+
+      Static {
+          text-align: center;
+      }
+  }
 }
 
-#book-delete-confirmation-container{
-  border: solid white;
-  height: auto;
-  align: center top;
-  width: 20%;
-}
-
-#book-delete-confirmation-container Button {
-  margin: 1;
-}
-
-#book-delete-confirmation-container Static {
-  text-align: center;
-}
-
-BookEditScreen {
+.edit-screen {
   align: center middle;
+  
+  .edit-screen-container {
+      border: round #767676;
+      height: auto;
+      width: 30%;
+  }
 }
 
-#book-edit-screen-container {
-  border: solid white;
-  height: auto;
-  width: 30%;
-}
-
-BookFilterScreen {
+.filter-screen {
   align: center middle;
+
+  .filter-input-group {
+      align: center middle;
+  }
+
+  .filter-field {
+      width: 15%;
+  }
+
+  .filter-value {
+      width: 30%;
+  }
+
+  .filter-table-container {
+      align: center top;
+  }
+
+  .filter-table {
+      width: auto;
+      border: round #87ffd7;
+  }
 }
 
-#book-filter-input-group-container {
+
+.stats-screen {
   align: center middle;
-}
-
-#book-filter-input-group-container Input {
-  width: 33%;
-}
-
-#book-filter-submit {
-  width: 15%;
-}
-
-
-#book-filter-table-container {
-  align: center top;
-}
-
-#book-filter-table {
   width: auto;
-}
 
-BookStatsScreen {
-  align: center middle;
-  width: auto;
+  .stats-table-container {
+    align: center top;
+  }
+    
+    .stats-table {
+      margin: 1 0 0 0;
+      height: auto;
+      width: auto;
+      border: round #bcbcbc;
+    }
 }
-
-#stats-yearly-label {
-  margin: 1 0 0 0;
-  width: auto;
-}
-
-#stats-yearly-table {
-  height: auto;
-  width: auto;
-  border: solid gray;
-}
-
-#stats-detailed-label {
-  margin: 1 0 0 0;
-  width: auto;
-}
-
-#stats-detailed-table {
-  height: auto;
-  width: auto;
-  border: solid gray;
-  content-align: center middle;
-}
-
