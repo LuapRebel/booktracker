@@ -20,7 +20,7 @@ from stats import BookStats
 
 
 class BookAddScreen(ModalScreen):
-    """Modal screen to provide inputs to create a new Book"""
+    """Screen to provide inputs to create a new Book"""
 
     BINDINGS = [
         ("escape", "push_books", "Books"),
@@ -64,33 +64,43 @@ class BookAddScreen(ModalScreen):
 
 
 class EditableDeletableScreen(Screen):
+    """Class containing methods used to take an ID from a DataTable cell
+    and use it to get a Book to pass onto an Edit or Delete screen.
+
+    Screens inheriting this class must define a `self.books` attribute before calling
+        the `_get_book_from_cell_value` method. BookScreen does this on startup,
+        BookFilterScreen does this after searching for books meeting the search
+        criteria.
+    """
 
     def on_data_table_cell_highlighted(self, event: DataTable.CellHighlighted) -> None:
-        self.cell_value = str(event.value)
+        self.cell_value = event.value
         self.cell_coordinate = event.coordinate
 
     def _get_book_from_cell_value(self) -> Book:
-        if self.cell_value:
-            try:
-                int_value: int = int(self.cell_value)
-            except ValueError:
-                pass
-            else:
-                if self.cell_coordinate.column == 0:
-                    book: Book = [b for b in self.books if b.id == int_value][0]
-                    return book
+        """Return a book from an 'Id' in a DataTable.
+        Only DataTable.CellHighilighted events matching Id column will be used.
+
+        Returns:
+            Book: Book matching the Id highlighted in the DataTable
+        """
+        if self.cell_coordinate.column == 0:
+            book: Book = [b for b in self.books if b.id == self.cell_value][0]
+            return book
 
     def action_push_edit(self) -> None:
         book: Book = self._get_book_from_cell_value()
-        self.app.push_screen(BookEditScreen(book))
+        if book:
+            self.app.push_screen(BookEditScreen(book))
 
     def action_push_delete(self) -> None:
         book: Book = self._get_book_from_cell_value()
-        self.app.push_screen(BookDeleteScreen(book))
+        if book:
+            self.app.push_screen(BookDeleteScreen(book))
 
 
 class BookDeleteScreen(ModalScreen):
-    """Screen to delete a Book given an ID"""
+    """Screen to delete a Book"""
 
     BINDINGS = [("escape", "push_books", "Books")]
 
@@ -127,7 +137,7 @@ class BookDeleteScreen(ModalScreen):
 
 
 class BookDeleteConfirmationScreen(ModalScreen[bool]):
-    """Widget providing dialog box to allow users to delete a book or cancel"""
+    """Widget dialog box to query users to delete a book or not"""
 
     BINDINGS = [("escape", "app.pop_screen", "Cancel")]
 
@@ -154,7 +164,9 @@ class BookDeleteConfirmationScreen(ModalScreen[bool]):
 
 
 class BookEditScreen(EditableDeletableScreen):
-    """Modal Screen to provide inputs to edit an existing book"""
+    """Screen providing inputs to edit an existing book
+    Input fields are automatically filled with data from the Book chosen.
+    """
 
     BINDINGS = [
         ("escape", "app.pop_screen", "Cancel"),
@@ -203,9 +215,9 @@ class BookEditScreen(EditableDeletableScreen):
         else:
             sql_prefix = "UPDATE books SET"
             sql_keys = ", ".join([f"{k} = ?" for k in validation_dict.keys()])
-            sql_values = tuple(validation_dict.values())
             sql_suffix = f"WHERE id = {self.book.id}"
             full_sql = f"{sql_prefix} {sql_keys} {sql_suffix}"
+            sql_values = tuple(validation_dict.values())
             cursor = db.cursor()
             cursor.execute(full_sql, sql_values)
             db.commit()
@@ -219,7 +231,7 @@ class BookEditScreen(EditableDeletableScreen):
 
 
 class BookFilterScreen(EditableDeletableScreen):
-    """Widget to filter books by field and search term"""
+    """Widget to filter books using Column name and search term"""
 
     BINDINGS = [
         ("escape", "push_books", "Books"),

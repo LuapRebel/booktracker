@@ -16,6 +16,15 @@ CREATE TABLE IF NOT EXISTS books(
 
 
 def dict_factory(cursor, row):
+    """Return database table rows as dictionaries
+
+    Args:
+        cursor (Cursor): sqlite3 Connection cursor
+        row (Row): sqlite3 Row
+
+    Returns:
+        dict[str, Any]: dictionary containing database table row data
+    """
     fields = [column[0] for column in cursor.description]
     return {k: v for k, v in zip(fields, row)}
 
