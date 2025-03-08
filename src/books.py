@@ -1,3 +1,5 @@
+import logging
+
 from pydantic import ValidationError
 from rich.text import Text
 from textual import on
@@ -17,6 +19,9 @@ from textual.widgets import (
 from db import db
 from schema import Book
 from stats import BookStats
+
+
+logger = logging.getLogger("booktracker")
 
 
 class BookAddScreen(ModalScreen):
@@ -57,6 +62,7 @@ class BookAddScreen(ModalScreen):
             db.commit()
             for i in inputs:
                 i.clear()
+            logger.info(f"Added book: {validation_dict}")
             self.app.push_screen(BookScreen())
 
     def action_push_books(self) -> None:
@@ -129,6 +135,7 @@ class BookDeleteScreen(ModalScreen):
                 cur = db.cursor()
                 cur.execute("DELETE FROM books WHERE id=?", (self.book.id,))
                 db.commit()
+                logger.info(f"Deleted book: {self.book.model_dump()}")
 
         self.app.push_screen(BookDeleteConfirmationScreen(), check_delete)
 
@@ -221,6 +228,7 @@ class BookEditScreen(EditableDeletableScreen):
             cursor = db.cursor()
             cursor.execute(full_sql, sql_values)
             db.commit()
+            logger.info(f"Edited book: {self.book.model_dump()} -> {validation_dict}")
             self.clear_inputs()
         finally:
             self.app.push_screen(BookScreen())
