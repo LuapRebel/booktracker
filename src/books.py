@@ -79,28 +79,26 @@ class EditableDeletableScreen(Screen):
         criteria.
     """
 
-    def on_data_table_cell_highlighted(self, event: DataTable.CellHighlighted) -> None:
-        self.cell_value = event.value
-        self.cell_coordinate = event.coordinate
-
-    def _get_book_from_cell_value(self) -> Book:
-        """Return a book from an 'Id' in a DataTable.
-        Only DataTable.CellHighilighted events matching Id column will be used.
-
-        Returns:
-            Book: Book matching the Id highlighted in the DataTable
-        """
-        if self.cell_coordinate.column == 0:
-            book: Book = [b for b in self.books if b.id == self.cell_value][0]
+    async def on_data_table_row_highlighted(
+        self, event: DataTable.RowHighlighted
+    ) -> None:
+        row = event.data_table._data[event.row_key]
+        self.row_id = tuple(row.values())[0]
+        book = await self._get_book_from_row_id()
+        if book:
             return book
 
-    def action_push_edit(self) -> None:
-        book: Book = self._get_book_from_cell_value()
+    async def _get_book_from_row_id(self) -> Book:
+        book = [book for book in self.books if book.id == self.row_id][0]
+        return book
+
+    async def action_push_edit(self) -> None:
+        book: Book = await self._get_book_from_row_id()
         if book:
             self.app.push_screen(BookEditScreen(book))
 
-    def action_push_delete(self) -> None:
-        book: Book = self._get_book_from_cell_value()
+    async def action_push_delete(self) -> None:
+        book: Book = await self._get_book_from_row_id()
         if book:
             self.app.push_screen(BookDeleteScreen(book))
 
@@ -285,6 +283,7 @@ class BookFilterScreen(EditableDeletableScreen):
             self.books = [Book(**d) for d in data]
             table = self.query_one("#book-filter-table", DataTable)
             table.clear(columns=True)
+            table.cursor_type = "row"
             columns = [*Book.model_fields.keys(), *Book.model_computed_fields.keys()]
             rows = [book.model_dump().values() for book in self.books]
             table.add_columns(*columns)
@@ -379,20 +378,18 @@ class BookScreen(EditableDeletableScreen):
                 yield DataTable(classes="class-table", id="books-table")
             yield Footer()
 
-    def on_mount(self) -> None:
-        self.books = Book.load_books()
+    async def on_mount(self) -> None:
+        self.books = await Book.load_books()
         self.add_class("class-screen")
-        self._create_books_table()
+        self._create_books_table(self.books)
 
-    def _on_screen_resume(self) -> None:
-        self._create_books_table()
-
-    def _create_books_table(self) -> None:
+    def _create_books_table(self, books: list[Book]) -> None:
         table = self.query_one("#books-table", DataTable)
+        table.cursor_type = "row"
         table.clear(columns=True)
         columns = [*Book.model_fields.keys(), *Book.model_computed_fields.keys()]
         table.add_columns(*columns)
-        rows = [book.model_dump().values() for book in self.books]
+        rows = [book.model_dump().values() for book in books]
         table.add_rows(rows)
         table.zebra_stripes = True
 

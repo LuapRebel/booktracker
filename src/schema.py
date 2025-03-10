@@ -83,7 +83,7 @@ class Book(BaseModel, extra="ignore"):
             return None
 
     @classmethod
-    def load_books(self) -> list["Book"]:
+    async def load_books(self) -> list["Book"]:
         """Load Book data from database and create a Book object for each row.
 
         Returns:
