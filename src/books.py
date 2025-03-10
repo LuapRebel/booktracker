@@ -4,7 +4,7 @@ from pydantic import ValidationError
 from rich.text import Text
 from textual import on
 from textual.app import ComposeResult
-from textual.containers import Container, HorizontalGroup
+from textual.containers import Container, Horizontal, HorizontalGroup
 from textual.screen import ModalScreen, Screen
 from textual.widgets import (
     Button,
@@ -315,10 +315,12 @@ class BookStatsScreen(Screen):
         self.stats = BookStats(self.books)
 
     def compose(self) -> ComposeResult:
-        with Container(classes="stats-table-container"):
+        with Container(classes="stats-container"):
             yield Header()
-            yield DataTable(classes="stats-table", id="stats-yearly-table")
-            yield DataTable(classes="stats-table", id="stats-detailed-table")
+            with Horizontal(id="stats-yearly-container"):
+                yield DataTable(classes="stats-table", id="stats-yearly-table")
+            with Horizontal(id="stats-detailed-container"):
+                yield DataTable(classes="stats-table", id="stats-detailed-table")
             yield Footer()
 
     def on_mount(self) -> None:

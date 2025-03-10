@@ -115,14 +115,32 @@ Header {
   align: center middle;
   width: auto;
 
-  .stats-table-container {
+  .stats-container {
     align: center top;
   }
-    
-    .stats-table {
-      margin: 1 0 0 0;
+
+    #stats-yearly-container {
       height: auto;
-      width: auto;
-      border: round #bcbcbc;
+      align: center middle;
+      margin: 2;
+
+      .stats-table {
+        height: auto;
+        width: auto;
+        border: round #bcbcbc;
+      }
     }
+
+    #stats-detailed-container {
+      height: auto;
+      align: center middle;
+      margin: 2;
+
+      .stats-table {
+        height: auto;
+        width: auto;
+        border: round #bcbcbc;
+      }
+    }
+    
 }
