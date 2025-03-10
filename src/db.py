@@ -52,7 +52,7 @@ if not Path(DB_PATH).is_file():
         db.execute(stmt)
     db.close()
 else:
-    db = sqlite3.connect(DB_PATH)
+    db = sqlite3.connect(DB_PATH, detect_types=sqlite3.PARSE_DECLTYPES)
     db.row_factory = dict_row_factory
 
 

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum
 import re
 from typing import Optional, Self
@@ -19,12 +19,12 @@ class Book(BaseModel, extra="ignore"):
     title: str = ""
     author: str = ""
     status: Status = Status.TBR
-    date_started: str = ""
-    date_completed: str = ""
+    date_started: date | None = None
+    date_completed: date | None = None
 
     @field_validator("date_started", "date_completed", mode="before")
     @classmethod
-    def validate_date(cls, value: str) -> str:
+    def validate_date(cls, value: date | None) -> date | None:
         """Validate date inputs to verify they are formatted YYYY-MM-DD
 
         Args:
@@ -39,11 +39,11 @@ class Book(BaseModel, extra="ignore"):
             will be raised.
         """
         if value:
-            if re.match("[0-9]{4}-[0-9]{2}-[0-9]{2}", value):
+            if re.match("[0-9]{4}-[0-9]{2}-[0-9]{2}", value.isoformat()):
                 return value
             else:
                 raise ValueError("dates must be formatted as 'YYYY-MM-DD'.")
-        return ""
+        return None
 
     @model_validator(mode="after")
     def validate_date_completed(self) -> Self:
@@ -58,9 +58,7 @@ class Book(BaseModel, extra="ignore"):
                 a ValueError is raised.
         """
         if self.date_started and self.date_completed:
-            if datetime.fromisoformat(self.date_completed) >= datetime.fromisoformat(
-                self.date_started
-            ):
+            if self.date_completed >= self.date_started:
                 return self
             else:
                 raise ValueError("date_completed must be after date_started.")
@@ -76,9 +74,7 @@ class Book(BaseModel, extra="ignore"):
                 date_started and date_completed on the same day, 1 is returned.
         """
         if self.date_started and self.date_completed:
-            ds = datetime.strptime(self.date_started, "%Y-%m-%d")
-            dc = datetime.strptime(self.date_completed, "%Y-%m-%d")
-            return (dc - ds).days + 1  # inclusive
+            return (self.date_completed - self.date_started).days + 1  # inclusive
         else:
             return None
 
