@@ -14,13 +14,13 @@ class Status(StrEnum):
     COMPLETED = "COMPLETED"
 
 
-class Book(BaseModel, extra="allow"):
+class Book(BaseModel, extra="ignore"):
     id: Optional[int] = None
     title: str = ""
     author: str = ""
     status: Status = Status.TBR
-    date_started: str | None = None
-    date_completed: str | None = None
+    date_started: str = ""
+    date_completed: str = ""
 
     @field_validator("date_started", "date_completed", mode="before")
     @classmethod
