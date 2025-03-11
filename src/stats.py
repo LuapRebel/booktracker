@@ -1,4 +1,3 @@
-from datetime import datetime
 from statistics import mean
 from typing import Optional
 
@@ -23,10 +22,9 @@ class BookStats:
                 and month are taken from date_completed.
         """
         if book.status == "COMPLETED" and book.date_completed:
-            ymd = datetime.fromisoformat(book.date_completed)
             return (
-                ymd.year,
-                ymd.month,
+                book.date_completed.year,
+                book.date_completed.month,
                 book.days_to_read,
             )
         return (0, 0, 0)

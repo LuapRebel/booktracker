@@ -24,7 +24,7 @@ class Book(BaseModel, extra="ignore"):
 
     @field_validator("date_started", "date_completed", mode="before")
     @classmethod
-    def validate_date(cls, value: date | None) -> date | None:
+    def validate_date(cls, value: date | str | None) -> date | None:
         """Validate date inputs to verify they are formatted YYYY-MM-DD
 
         Args:
@@ -39,10 +39,16 @@ class Book(BaseModel, extra="ignore"):
             will be raised.
         """
         if value:
-            if re.match("[0-9]{4}-[0-9]{2}-[0-9]{2}", value.isoformat()):
-                return value
-            else:
-                raise ValueError("dates must be formatted as 'YYYY-MM-DD'.")
+            if isinstance(value, date):
+                if re.match("[0-9]{4}-[0-9]{2}-[0-9]{2}", value.isoformat()):
+                    return value
+                else:
+                    raise ValueError("dates must be formatted as 'YYYY-MM-DD'.")
+            elif isinstance(value, str):
+                if re.match("[0-9]{4}-[0-9]{2}-[0-9]{2}", value):
+                    return date.fromisoformat(value)
+                else:
+                    raise ValueError("dates must be formatted as 'YYYY-MM-DD'.")
         return None
 
     @model_validator(mode="after")

@@ -188,8 +188,14 @@ class BookEditScreen(EditableDeletableScreen):
             yield Input(placeholder="Title", id="title")
             yield Input(placeholder="Author (Lastname, First)", id="author")
             yield Input(placeholder="Status (TBR, IN_PROGRESS, COMPLETED)", id="status")
-            yield Input(placeholder="Date Started (YYYY-MM-DD)", id="date-started")
-            yield Input(placeholder="Date Completed (YYYY-MM-DD)", id="date-completed")
+            yield Input(
+                placeholder="Date Started (YYYY-MM-DD)", id="date-started", value=None
+            )
+            yield Input(
+                placeholder="Date Completed (YYYY-MM-DD)",
+                id="date-completed",
+                value=None,
+            )
             yield Button("Submit", id="edit-submit")
             yield Footer()
 
@@ -200,7 +206,9 @@ class BookEditScreen(EditableDeletableScreen):
             for i in inputs:
                 if i.id:
                     key = i.id.replace("-", "_")
-                    i.value = str(self.book.model_dump().get(key, ""))
+                    value = self.book.model_dump().get(key, "")
+                    if value:
+                        i.value = str(value)
         else:
             self.app.push_screen(BookScreen())
 
@@ -212,11 +220,16 @@ class BookEditScreen(EditableDeletableScreen):
     @on(Button.Pressed, "#edit-submit")
     def edit_submit_pressed(self):
         inputs = self.query(Input)
-        validation_dict = {i.id.replace("-", "_"): i.value for i in inputs}
+        validation_dict = {"id": self.book.id}
+        for input in inputs:
+            if input.id and input.value:
+                key = input.id.replace("-", "_")
+                validation_dict[key] = input.value
         try:
             Book(**validation_dict)
         except ValidationError as e:
-            self.notify(str(e))
+            for error in e.errors():
+                self.notify(f"{error['loc'][0]}: {error['msg']}")
         else:
             sql_prefix = "UPDATE books SET"
             sql_keys = ", ".join([f"{k} = ?" for k in validation_dict.keys()])
