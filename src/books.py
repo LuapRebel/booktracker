@@ -222,7 +222,7 @@ class BookEditScreen(EditableDeletableScreen):
         inputs = self.query(Input)
         validation_dict = {"id": self.book.id}
         for input in inputs:
-            if input.id and input.value:
+            if input.id:
                 key = input.id.replace("-", "_")
                 validation_dict[key] = input.value
         try:
