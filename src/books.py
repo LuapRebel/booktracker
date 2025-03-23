@@ -1,4 +1,5 @@
 import logging
+import re
 
 from pydantic import ValidationError
 from rich.text import Text
@@ -249,73 +250,6 @@ class BookEditScreen(EditableDeletableScreen):
         self.app.push_screen(BookScreen())
 
 
-class BookFilterScreen(EditableDeletableScreen):
-    """Widget to filter books using Column name and search term"""
-
-    BINDINGS = [
-        ("escape", "push_books", "Books"),
-        ("e", "push_edit", "Edit"),
-        ("d", "push_delete", "Delete"),
-    ]
-
-    def compose(self) -> ComposeResult:
-        yield Header()
-        with HorizontalGroup(
-            classes="filter-input-group", id="book-filter-input-group-container"
-        ):
-            yield Select.from_values(
-                values=Book.model_fields.keys(),
-                prompt="Column",
-                id="book-filter-field",
-                classes="filter-field",
-            )
-            yield Input(
-                placeholder="Search term",
-                classes="filter-value",
-                id="book-filter-value",
-            )
-            yield Button("Submit", id="book-filter-submit")
-        with Container(
-            classes="filter-table-container", id="book-filter-table-container"
-        ):
-            yield DataTable(classes="filter-table", id="book-filter-table")
-        yield Footer()
-
-    def on_mount(self) -> None:
-        self.add_class("filter-screen")
-
-    @on(Button.Pressed, "#book-filter-submit")
-    def filter_submit_pressed(self) -> None:
-        field = self.query_one("#book-filter-field", Select).value
-        value = self.query_one("#book-filter-value", Input).value
-        if field and value:
-            read_sql = f"SELECT * FROM books WHERE {field} LIKE ?"
-            binding = (f"%{value}%",)
-            cur = db.cursor()
-            data = cur.execute(read_sql, binding).fetchall()
-            self.books = [Book(**d) for d in data]
-            table = self.query_one("#book-filter-table", DataTable)
-            table.clear(columns=True)
-            table.cursor_type = "row"
-            columns = [*Book.model_fields.keys(), *Book.model_computed_fields.keys()]
-            rows = [book.model_dump().values() for book in self.books]
-            table.add_columns(*columns)
-            table.add_rows(rows)
-            table.zebra_stripes = True
-            table.border_title = f"'{value}' in {field}"
-            self.focus_next("#book-filter-table")
-            self.clear_inputs()
-
-    def clear_inputs(self) -> None:
-        inputs = self.query(Input)
-        for i in inputs:
-            i.clear()
-
-    def action_push_books(self) -> None:
-        self.clear_inputs()
-        self.app.push_screen(BookScreen())
-
-
 class BookStatsScreen(Screen):
     """Screen to display stats about books read"""
 
@@ -377,7 +311,6 @@ class BookScreen(EditableDeletableScreen):
     """Widget to manage book collection."""
 
     BINDINGS = [
-        ("f", "push_filter", "Filter"),
         ("a", "push_add", "Add"),
         ("e", "push_edit", "Edit"),
         ("d", "push_delete", "Delete"),
@@ -387,8 +320,24 @@ class BookScreen(EditableDeletableScreen):
     def compose(self) -> ComposeResult:
         with Container(id="books-container"):
             yield Header()
-            with Container(id="books-table-container"):
-                yield DataTable(classes="class-table", id="books-table")
+            with Container(id="books-container"):
+                with HorizontalGroup(
+                    classes="filter-input-group", id="book-filter-input-group-container"
+                ):
+                    for field in [
+                        "title",
+                        "author",
+                        "status",
+                        "date_started",
+                        "date_completed",
+                    ]:
+                        yield Input(
+                            placeholder=field.title(),
+                            classes="filter-search",
+                            id=f"filter-{field}-search",
+                        )
+                with Container(id="books-table-container"):
+                    yield DataTable(id="books-table")
             yield Footer()
 
     async def on_mount(self) -> None:
@@ -406,8 +355,22 @@ class BookScreen(EditableDeletableScreen):
         table.add_rows(rows)
         table.zebra_stripes = True
 
-    def action_push_filter(self) -> None:
-        self.app.push_screen(BookFilterScreen())
+    async def filter_books(self, field: str, search_term: str) -> list[Book]:
+        if field and search_term:
+            read_sql = f"SELECT * FROM books WHERE {field} LIKE ?"
+            binding = (f"%{search_term}%",)
+            cur = db.cursor()
+            data = cur.execute(read_sql, binding).fetchall()
+            if data is not None:
+                return [Book(**d) for d in data]
+        return self.books
+
+    async def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input.id is not None:
+            field = re.sub("^filter-|-search$", "", event.input.id).replace("-", "_")
+            search_term = event.input.value
+            filtered_data = await self.filter_books(field, search_term)
+            self._create_books_table(filtered_data)
 
     def action_push_add(self) -> None:
         self.app.push_screen(BookAddScreen())

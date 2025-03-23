@@ -6,20 +6,37 @@ Header {
 .class-screen {
   overflow-y: hidden;
 
-  #books-table-container {
+  #books-container {
     align: center top;
-  }
+    
+    .filter-input-group {
+      align: center middle;
 
-    .class-table {
-        width: auto;
-        margin: 0 0 5 0;
-        color: #c6c6c6;
+      .filter-search {
+          width: 12%;
+      }
+
+      .filter-table-container {
+          align: center top;
+      }
+
+      .filter-table {
+          width: auto;
+          border: round #87ffd7;
+      }
     }
 
-    #books-table {
+    #books-table-container {
+      align: center top;
+    }
+  
+      #books-table {
+        width: auto;
         margin: 0 0 2 0;
         border: round #005fff;
-    }
+      }
+  }
+
 
 }
 
@@ -82,31 +99,6 @@ Header {
       border: round #767676;
       height: auto;
       width: 30%;
-  }
-}
-
-.filter-screen {
-  align: center middle;
-
-  .filter-input-group {
-      align: center middle;
-  }
-
-  .filter-field {
-      width: 15%;
-  }
-
-  .filter-value {
-      width: 30%;
-  }
-
-  .filter-table-container {
-      align: center top;
-  }
-
-  .filter-table {
-      width: auto;
-      border: round #87ffd7;
   }
 }
 
