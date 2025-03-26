@@ -9,20 +9,42 @@ Header {
   #books-container {
     align: center top;
     
-    .filter-input-group {
-      align: center middle;
+    #books-filter-input-group-container {
+      align: center top;
+      height: auto;
+      width: auto;
+      
+      #books-filter-input-group {
+        align: center middle;
 
-      .filter-search {
-          width: 12%;
-      }
-
-      .filter-table-container {
-          align: center top;
-      }
-
-      .filter-table {
-          width: auto;
-          border: round #87ffd7;
+        .filter-search {
+          padding: 0 1;
+          height: 1;
+          margin: 0 1;
+          background: $surface;
+          border: none;
+          width: 15%;
+  
+          &.-invalid {
+            padding-left: 0;
+            border-left: outer $error;
+          }
+        
+          &:focus {
+            background: $surface-lighten-1;
+            padding-left: 0;
+            border-left: outer $surface-lighten-2;
+            &.-invalid {
+              border-left: outer $error;
+            }
+        
+            & .input--cursor {
+              color: $text;
+              background: $accent;
+              text-style: not reverse;
+            }
+          }
+        }
       }
     }
 
@@ -36,8 +58,6 @@ Header {
         border: round #005fff;
       }
   }
-
-
 }
 
 .add-screen {

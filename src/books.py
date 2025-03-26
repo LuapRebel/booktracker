@@ -320,9 +320,9 @@ class BookScreen(EditableDeletableScreen):
     def compose(self) -> ComposeResult:
         with Container(id="books-container"):
             yield Header()
-            with Container(id="books-container"):
+            with Container(id="books-filter-input-group-container"):
                 with HorizontalGroup(
-                    classes="filter-input-group", id="book-filter-input-group-container"
+                    classes="filter-input-group", id="books-filter-input-group"
                 ):
                     for field in [
                         "title",
@@ -332,12 +332,12 @@ class BookScreen(EditableDeletableScreen):
                         "date_completed",
                     ]:
                         yield Input(
-                            placeholder=field.title(),
+                            placeholder=field.replace("_", " ").title(),
                             classes="filter-search",
                             id=f"filter-{field}-search",
                         )
-                with Container(id="books-table-container"):
-                    yield DataTable(id="books-table")
+            with Container(id="books-table-container"):
+                yield DataTable(id="books-table")
             yield Footer()
 
     async def on_mount(self) -> None:
