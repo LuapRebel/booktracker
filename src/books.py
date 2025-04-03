@@ -344,6 +344,7 @@ class BookScreen(EditableDeletableScreen):
         self.books = await Book.load_books()
         self.add_class("class-screen")
         self._create_books_table(self.books)
+        self.set_focus(self.query_one("#books-table", DataTable))
 
     def _create_books_table(self, books: list[Book]) -> None:
         table = self.query_one("#books-table", DataTable)
