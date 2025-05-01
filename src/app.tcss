@@ -3,19 +3,24 @@ Header {
   text-style: bold;
 }
 
-.class-screen {
-  overflow-y: hidden;
-
+BookScreen {
   #books-container {
     align: center top;
+    width: 2fr;
+    border: round grey;
+
+    #books-container-header {
+      height: 3;
+      margin-top: 1;
+      text-style: bold;
+      text-align: center;
+    }
     
     #books-filter-input-group-container {
-      align: center top;
-      height: auto;
-      width: auto;
       
       #books-filter-input-group {
-        align: center middle;
+        border: #d0d0d0;
+        border-title-align: center;
 
         .filter-search {
           padding: 0 1;
@@ -23,7 +28,7 @@ Header {
           margin: 0 1;
           background: $surface;
           border: none;
-          width: 15%;
+          width: 1fr;
   
           &.-invalid {
             padding-left: 0;
@@ -50,17 +55,47 @@ Header {
 
     #books-table-container {
       align: center top;
-    }
-  
+      
       #books-table {
-        width: auto;
-        margin: 0 0 2 0;
-        border: round #005fff;
+        width: 100%;
+        border: round grey;
       }
+    }
+  }
+  
+  #stats-container {
+    width: 1fr;
+    border: round grey;
+    
+    #stats-container-header {
+      height: 3;
+      margin-top: 1;
+      text-style: bold;
+      text-align: center;
+    }
+
+    #stats-table-container {
+      align: center top;
+  
+      #stats-yearly-table {
+        height: auto;
+        width: auto;
+        border: round #bcbcbc;
+        border-title-align: center;
+        margin-bottom: 2;
+      }
+
+      #stats-detailed-table {
+        height: auto;
+        width: auto;
+        border: round #bcbcbc;
+        border-title-align: center;
+      }
+    }
   }
 }
 
-.add-screen {
+BookAddScreen {
   align: center middle;
   
   .add-screen-container {
@@ -70,12 +105,12 @@ Header {
   }
 }
 
-.delete-screen {
+BookDeleteScreen {
   align: center middle;
 
   .delete-container {
       align: center top;
-      border: round #767676;
+      border: round ansi_bright_red;
       height: auto;
       width: auto;
       max-width: 20%;
@@ -90,10 +125,9 @@ Header {
         width: 100%;
       }
   }
-  
 }
 
-.delete-confirmation-screen {
+BookDeleteConfirmationScreen {
   align: center middle;
 
   .delete-confirmation-container {
@@ -112,7 +146,7 @@ Header {
   }
 }
 
-.edit-screen {
+BookEditScreen {
   align: center middle;
   
   .edit-screen-container {
@@ -120,39 +154,4 @@ Header {
       height: auto;
       width: 30%;
   }
-}
-
-
-.stats-screen {
-  align: center middle;
-  width: auto;
-
-  .stats-container {
-    align: center top;
-  }
-
-    #stats-yearly-container {
-      height: auto;
-      align: center middle;
-      margin: 2;
-
-      .stats-table {
-        height: auto;
-        width: auto;
-        border: round #bcbcbc;
-      }
-    }
-
-    #stats-detailed-container {
-      height: auto;
-      align: center middle;
-      margin: 2;
-
-      .stats-table {
-        height: auto;
-        width: auto;
-        border: round #bcbcbc;
-      }
-    }
-    
 }

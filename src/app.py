@@ -45,7 +45,5 @@ class BookTracker(App):
 
 if __name__ == "__main__":
     setup_logging()
-    logger.info("Starting Booktracker...")
     app = BookTracker()
     app.run()
-    logger.info("Exiting Booktracker...")

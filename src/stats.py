@@ -62,7 +62,7 @@ class BookStats:
             "year": year,
             "month": month,
             "count": count,
-            "avg_days_to_read": avg_days_to_read,
+            "avg_dtr": avg_days_to_read,
         }
 
     def year_stats(self, year: int) -> dict[str, int | Optional[float]]:
@@ -90,7 +90,7 @@ class BookStats:
         return {
             "year": year,
             "count": count,
-            "books_per_month": books_per_month,
-            "books_per_week": books_per_week,
-            "avg_days_to_read": avg_days_to_read,
+            "per_month": books_per_month,
+            "per_week": books_per_week,
+            "avg_dtr": avg_days_to_read,
         }

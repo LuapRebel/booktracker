@@ -1,6 +1,6 @@
 [project]
 name = "booktracker"
-version = "0.1.0"
+version = "1.0.0"
 description = "Python Textual application to track books."
 readme = "README.md"
 requires-python = ">=3.13"
@@ -23,7 +23,4 @@ dev = [
 addopts = "--cov --cov-report term-missing"
 
 [tool.coverage.run]
-omit = [
-    "*/tests/*",
-    "*/__init__.py",
-]
+omit = ["*/tests/*", "*/__init__.py"]

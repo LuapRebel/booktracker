@@ -5,7 +5,7 @@ from pydantic import ValidationError
 from rich.text import Text
 from textual import on
 from textual.app import ComposeResult
-from textual.containers import Container, Horizontal, HorizontalGroup
+from textual.containers import Center, Container, Horizontal, HorizontalGroup, Vertical
 from textual.screen import ModalScreen, Screen
 from textual.widgets import (
     Button,
@@ -13,7 +13,6 @@ from textual.widgets import (
     Footer,
     Header,
     Input,
-    Select,
     Static,
 )
 
@@ -41,9 +40,6 @@ class BookAddScreen(ModalScreen):
             yield Input(placeholder="Date Completed (YYYY-MM-DD)", id="date-completed")
             yield Button("Submit", id="add")
             yield Footer()
-
-    def on_mount(self) -> None:
-        self.add_class("add-screen")
 
     @on(Button.Pressed, "#add")
     def book_submit_pressed(self):
@@ -79,6 +75,9 @@ class EditableDeletableScreen(Screen):
         BookFilterScreen does this after searching for books meeting the search
         criteria.
     """
+
+    async def on_mount(self) -> None:
+        self.books = await Book.load_books()
 
     async def on_data_table_row_highlighted(
         self, event: DataTable.RowHighlighted
@@ -120,7 +119,6 @@ class BookDeleteScreen(ModalScreen):
             yield Footer()
 
     def on_mount(self) -> None:
-        self.add_class("delete-screen")
         if self.book:
             input = self.query_one("#id-delete", Static)
             input.update(f"Delete {self.book.title}?")
@@ -157,9 +155,6 @@ class BookDeleteConfirmationScreen(ModalScreen[bool]):
                 yield Button("Yes", id="delete-book-yes")
                 yield Button("No", id="delete-book-no")
             yield Footer()
-
-    def on_mount(self) -> None:
-        self.add_class("delete-confirmation-screen")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "delete-book-yes":
@@ -200,8 +195,7 @@ class BookEditScreen(EditableDeletableScreen):
             yield Button("Submit", id="edit-submit")
             yield Footer()
 
-    def on_mount(self) -> None:
-        self.add_class("edit-screen")
+    def on_mount(self):
         if self.book:
             inputs = self.query(Input)
             for i in inputs:
@@ -250,63 +244,6 @@ class BookEditScreen(EditableDeletableScreen):
         self.app.push_screen(BookScreen())
 
 
-class BookStatsScreen(Screen):
-    """Screen to display stats about books read"""
-
-    BINDINGS = [("escape", "push_books", "Books")]
-
-    def __init__(self, books: list[Book]) -> None:
-        super().__init__()
-        self.books = books
-        self.stats = BookStats(self.books)
-
-    def compose(self) -> ComposeResult:
-        with Container(classes="stats-container"):
-            yield Header()
-            with Horizontal(id="stats-yearly-container"):
-                yield DataTable(classes="stats-table", id="stats-yearly-table")
-            with Horizontal(id="stats-detailed-container"):
-                yield DataTable(classes="stats-table", id="stats-detailed-table")
-            yield Footer()
-
-    def on_mount(self) -> None:
-        self.add_class("stats-screen")
-        self._create_yearly_stats_table()
-        self._create_detailed_stats_table()
-
-    def _style_table_column(self, column: str) -> Text:
-        padded_title = column.replace("_", " ").title().center(len(column) + 2)
-        return Text(padded_title, justify="center")
-
-    def _generate_formatted_table(self, table: DataTable, stats: list[dict]) -> None:
-        table.clear(columns=True)
-        columns = [self._style_table_column(key) for key in stats[0].keys()]
-        table.add_columns(*columns)
-        rows = [stat.values() for stat in stats]
-        for row in rows:
-            styled_row = [Text(str(cell), justify="center") for cell in row]
-            table.add_row(*styled_row)
-        table.zebra_stripes = True
-
-    def _create_detailed_stats_table(self) -> None:
-        table = self.query_one("#stats-detailed-table", DataTable)
-        table.border_title = "BookTracker Yearly Stats"
-        stats = self.stats.detailed_stats()
-        self._generate_formatted_table(table, stats)
-
-    def _create_yearly_stats_table(self) -> None:
-        table = self.query_one("#stats-yearly-table", DataTable)
-        table.border_title = "BookTracker Detailed Stats"
-        years = sorted(
-            {stat["year"] for stat in self.stats.detailed_stats()}, reverse=True
-        )
-        stats = [self.stats.year_stats(year) for year in years]
-        self._generate_formatted_table(table, stats)
-
-    def action_push_books(self) -> None:
-        self.app.push_screen(BookScreen())
-
-
 class BookScreen(EditableDeletableScreen):
     """Widget to manage book collection."""
 
@@ -314,36 +251,50 @@ class BookScreen(EditableDeletableScreen):
         ("a", "push_add", "Add"),
         ("e", "push_edit", "Edit"),
         ("d", "push_delete", "Delete"),
-        ("s", "push_stats", "Stats"),
     ]
 
     def compose(self) -> ComposeResult:
-        with Container(id="books-container"):
-            yield Header()
-            with Container(id="books-filter-input-group-container"):
-                with HorizontalGroup(
-                    classes="filter-input-group", id="books-filter-input-group"
-                ):
-                    for field in [
-                        "title",
-                        "author",
-                        "status",
-                        "date_started",
-                        "date_completed",
-                    ]:
-                        yield Input(
-                            placeholder=field.replace("_", " ").title(),
-                            classes="filter-search",
-                            id=f"filter-{field}-search",
+        yield Header()
+        with Horizontal():
+            with Vertical(id="books-container"):
+                yield Static("Books", id="books-container-header")
+                with Vertical(id="books-filter-input-group-container"):
+                    filter_group = HorizontalGroup(
+                        classes="filter-input-group", id="books-filter-input-group"
+                    )
+                    filter_group.border_title = "Filter Books"
+                    with filter_group:
+                        for field in [
+                            "title",
+                            "author",
+                            "status",
+                            "date_started",
+                            "date_completed",
+                        ]:
+                            yield Input(
+                                placeholder=field.replace("_", " ").title(),
+                                classes="filter-search",
+                                id=f"filter-{field}-search",
+                            )
+                    with Container(id="books-table-container"):
+                        yield DataTable(id="books-table")
+            with Vertical(id="stats-container"):
+                yield Static("Stats", id="stats-container-header")
+                with Container(id="stats-table-container"):
+                    with Center():
+                        yield DataTable(classes="stats-table", id="stats-yearly-table")
+                    with Center():
+                        yield DataTable(
+                            classes="stats-table", id="stats-detailed-table"
                         )
-            with Container(id="books-table-container"):
-                yield DataTable(id="books-table")
-            yield Footer()
+        yield Footer()
 
     async def on_mount(self) -> None:
-        self.books = await Book.load_books()
-        self.add_class("class-screen")
+        await super().on_mount()
+        self.stats = BookStats(self.books)
         self._create_books_table(self.books)
+        self._create_yearly_stats_table()
+        self._create_detailed_stats_table()
         self.set_focus(self.query_one("#books-table", DataTable))
 
     def _create_books_table(self, books: list[Book]) -> None:
@@ -351,7 +302,17 @@ class BookScreen(EditableDeletableScreen):
         table.cursor_type = "row"
         table.clear(columns=True)
         columns = [*Book.model_fields.keys(), *Book.model_computed_fields.keys()]
-        table.add_columns(*columns)
+        widths = {"title": 35, "author": 25}
+        for column in columns:
+            if column in widths:
+                width = widths[column]
+            else:
+                width = None
+            if column == "days_to_read":
+                label = "DTR"
+            else:
+                label = column.replace("_", " ").title()
+            table.add_column(label=label, width=width)
         rows = [book.model_dump().values() for book in books]
         table.add_rows(rows)
         table.zebra_stripes = True
@@ -372,9 +333,36 @@ class BookScreen(EditableDeletableScreen):
             search_term = event.input.value
             filtered_data = await self.filter_books(field, search_term)
             self._create_books_table(filtered_data)
+            self.set_focus(self.query_one("#books-table", DataTable))
 
     def action_push_add(self) -> None:
         self.app.push_screen(BookAddScreen())
 
-    def action_push_stats(self) -> None:
-        self.app.push_screen(BookStatsScreen(self.books))
+    def _style_table_column(self, column: str) -> Text:
+        padded_title = column.replace("_", " ").title().center(len(column) + 2)
+        return Text(padded_title, justify="center")
+
+    def _generate_formatted_table(self, table: DataTable, stats: list[dict]) -> None:
+        table.clear(columns=True)
+        columns = [self._style_table_column(key) for key in stats[0].keys()]
+        table.add_columns(*columns)
+        rows = [stat.values() for stat in stats]
+        for row in rows:
+            styled_row = [Text(str(cell), justify="center") for cell in row]
+            table.add_row(*styled_row)
+        table.zebra_stripes = True
+
+    def _create_detailed_stats_table(self) -> None:
+        table = self.query_one("#stats-detailed-table", DataTable)
+        table.border_title = "Detailed Stats"
+        stats = self.stats.detailed_stats()
+        self._generate_formatted_table(table, stats)
+
+    def _create_yearly_stats_table(self) -> None:
+        table = self.query_one("#stats-yearly-table", DataTable)
+        table.border_title = "Yearly Stats"
+        years = sorted(
+            {stat["year"] for stat in self.stats.detailed_stats()}, reverse=True
+        )
+        stats = [self.stats.year_stats(year) for year in years]
+        self._generate_formatted_table(table, stats)
