@@ -1,3 +1,4 @@
+from datetime import date
 import logging
 import re
 
@@ -315,7 +316,14 @@ class BookScreen(EditableDeletableScreen):
             table.add_column(label=label, width=width, key=column)
         rows = [book.model_dump().values() for book in books]
         table.add_rows(rows)
-        table.sort("date_started", reverse=True)
+
+        def datesort(date_started):
+            if date_started is None:
+                return date.today()
+            else:
+                return date_started
+
+        table.sort("date_started", key=datesort, reverse=True)
         table.zebra_stripes = True
 
     async def filter_books(self, field: str, search_term: str) -> list[Book]:
