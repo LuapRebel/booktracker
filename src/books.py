@@ -281,9 +281,9 @@ class BookScreen(EditableDeletableScreen):
             with Vertical(id="stats-container"):
                 yield Static("Stats", id="stats-container-header")
                 with Container(id="stats-table-container"):
-                    with Center():
+                    with Container(id="stats-yearly-table-container"):
                         yield DataTable(classes="stats-table", id="stats-yearly-table")
-                    with Center():
+                    with Container(id="stats-detailed-table-container"):
                         yield DataTable(
                             classes="stats-table", id="stats-detailed-table"
                         )
@@ -312,9 +312,10 @@ class BookScreen(EditableDeletableScreen):
                 label = "DTR"
             else:
                 label = column.replace("_", " ").title()
-            table.add_column(label=label, width=width)
+            table.add_column(label=label, width=width, key=column)
         rows = [book.model_dump().values() for book in books]
         table.add_rows(rows)
+        table.sort("date_started", reverse=True)
         table.zebra_stripes = True
 
     async def filter_books(self, field: str, search_term: str) -> list[Book]:
@@ -350,6 +351,7 @@ class BookScreen(EditableDeletableScreen):
         for row in rows:
             styled_row = [Text(str(cell), justify="center") for cell in row]
             table.add_row(*styled_row)
+        table.cursor_type = "none"
         table.zebra_stripes = True
 
     def _create_detailed_stats_table(self) -> None:

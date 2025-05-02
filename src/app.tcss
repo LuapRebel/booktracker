@@ -59,6 +59,7 @@ BookScreen {
       #books-table {
         width: 100%;
         border: round grey;
+        scrollbar-size: 0 1;
       }
     }
   }
@@ -76,20 +77,30 @@ BookScreen {
 
     #stats-table-container {
       align: center top;
-  
-      #stats-yearly-table {
-        height: auto;
-        width: auto;
-        border: round #bcbcbc;
-        border-title-align: center;
-        margin-bottom: 2;
-      }
 
-      #stats-detailed-table {
+      #stats-yearly-table-container {
+        align: center top;
         height: auto;
-        width: auto;
-        border: round #bcbcbc;
-        border-title-align: center;
+
+        #stats-yearly-table {
+          height: auto;
+          width: auto;
+          border: round #bcbcbc;
+          border-title-align: center;
+          margin-bottom: 2;
+        }
+      }
+  
+      #stats-detailed-table-container {
+        align: center top;
+        
+        #stats-detailed-table {
+          height: auto;
+          width: auto;
+          border: round #bcbcbc;
+          border-title-align: center;
+          scrollbar-size: 0 1;
+        }
       }
     }
   }
