@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from rich.text import Text
 from textual import on
 from textual.app import ComposeResult
-from textual.containers import Center, Container, Horizontal, HorizontalGroup, Vertical
+from textual.containers import Container, Horizontal, HorizontalGroup, Vertical
 from textual.screen import ModalScreen, Screen
 from textual.widgets import (
     Button,
@@ -299,6 +299,12 @@ class BookScreen(EditableDeletableScreen):
         self.set_focus(self.query_one("#books-table", DataTable))
 
     def _create_books_table(self, books: list[Book]) -> None:
+        def datesort(date_started):
+            if date_started is None:
+                return date.today()
+            else:
+                return date_started
+
         table = self.query_one("#books-table", DataTable)
         table.cursor_type = "row"
         table.clear(columns=True)
@@ -316,13 +322,6 @@ class BookScreen(EditableDeletableScreen):
             table.add_column(label=label, width=width, key=column)
         rows = [book.model_dump().values() for book in books]
         table.add_rows(rows)
-
-        def datesort(date_started):
-            if date_started is None:
-                return date.today()
-            else:
-                return date_started
-
         table.sort("date_started", key=datesort, reverse=True)
         table.zebra_stripes = True
 
@@ -347,13 +346,9 @@ class BookScreen(EditableDeletableScreen):
     def action_push_add(self) -> None:
         self.app.push_screen(BookAddScreen())
 
-    def _style_table_column(self, column: str) -> Text:
-        padded_title = column.replace("_", " ").title().center(len(column) + 2)
-        return Text(padded_title, justify="center")
-
     def _generate_formatted_table(self, table: DataTable, stats: list[dict]) -> None:
         table.clear(columns=True)
-        columns = [self._style_table_column(key) for key in stats[0].keys()]
+        columns = [key.replace("_", " ").title() for key in stats[0].keys()]
         table.add_columns(*columns)
         rows = [stat.values() for stat in stats]
         for row in rows:
