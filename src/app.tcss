@@ -111,8 +111,13 @@ BookAddScreen {
   
   .add-screen-container {
       border: round #767676;
+      border-title-align: center;
       height: auto;
       width: 30%;
+
+      Button {
+        width: 100%;
+      }
   }
 }
 

@@ -33,7 +33,11 @@ class BookAddScreen(ModalScreen):
     ]
 
     def compose(self) -> ComposeResult:
-        with Container(classes="add-screen-container", id="add-screen-container"):
+        add_screen_container = Container(
+            classes="add-screen-container", id="add-screen-container"
+        )
+        add_screen_container.border_title = "Add A Book"
+        with add_screen_container:
             yield Input(placeholder="Title", id="title")
             yield Input(placeholder="Author (Lastname, First)", id="author")
             yield Input(placeholder="Status (TBR, IN_PROGRESS, COMPLETED)", id="status")
@@ -90,8 +94,9 @@ class EditableDeletableScreen(Screen):
             return book
 
     async def _get_book_from_row_id(self) -> Book:
-        book = [book for book in self.books if book.id == self.row_id][0]
-        return book
+        book = [book for book in self.books if book.id == self.row_id]
+        if book:
+            return book[0]
 
     async def action_push_edit(self) -> None:
         book: Book = await self._get_book_from_row_id()
@@ -292,10 +297,13 @@ class BookScreen(EditableDeletableScreen):
 
     async def on_mount(self) -> None:
         await super().on_mount()
-        self.stats = BookStats(self.books)
-        self._create_books_table(self.books)
-        self._create_yearly_stats_table()
-        self._create_detailed_stats_table()
+        if self.books:
+            self.stats = BookStats(self.books)
+            self._create_books_table(self.books)
+            self._create_yearly_stats_table()
+            self._create_detailed_stats_table()
+        else:
+            self.notify("To Add a Book, Press 'a'", severity="warning")
         self.set_focus(self.query_one("#books-table", DataTable))
 
     def _create_books_table(self, books: list[Book]) -> None:
