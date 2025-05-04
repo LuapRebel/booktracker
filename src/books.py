@@ -314,7 +314,6 @@ class BookScreen(EditableDeletableScreen):
                 return date_started
 
         table = self.query_one("#books-table", DataTable)
-        table.cursor_type = "row"
         table.clear(columns=True)
         columns = [*Book.model_fields.keys(), *Book.model_computed_fields.keys()]
         widths = {"title": 35, "author": 25}
@@ -331,6 +330,7 @@ class BookScreen(EditableDeletableScreen):
         rows = [book.model_dump().values() for book in books]
         table.add_rows(rows)
         table.sort("date_started", key=datesort, reverse=True)
+        table.cursor_type = "row"
         table.zebra_stripes = True
 
     async def filter_books(self, field: str, search_term: str) -> list[Book]:

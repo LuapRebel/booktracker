@@ -1,3 +1,4 @@
+from datetime import date
 from itertools import product
 
 from statistics import mean
@@ -92,8 +93,14 @@ class BookStats:
         count = len(books_read)
         num_months = len({book[1] for book in self.ymd if book[0] == year})
         num_weeks = num_months * 4.33
-        books_per_month = round(count / num_months, 2)
-        books_per_week = round(count / num_weeks, 2)
+        # Calculate by day in current year to avoid undercounting incomplete months
+        if year == date.today().year:
+            days = (date.today() - date(year, 1, 1)).days
+            books_per_month = round((count / days) * (364.25 / 12), 2)
+            books_per_week = round(count / days, 2) * 7
+        else:
+            books_per_month = round(count / num_months, 2)
+            books_per_week = round(count / num_weeks, 2)
         if count:
             avg_days_to_read = round(mean([book[2] for book in books_read]), 2)
         else:
