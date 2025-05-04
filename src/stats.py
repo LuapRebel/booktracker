@@ -1,3 +1,5 @@
+from itertools import product
+
 from statistics import mean
 from typing import Optional
 
@@ -37,8 +39,17 @@ class BookStats:
             list[dict]: list of returns from the `month_stats` method, corresponding
                 to every month and year in which a book was completed.
         """
-        yms = sorted({(ymd[0], ymd[1]) for ymd in self.ymd}, reverse=True)
-        return [self.month_stats(*ym) for ym in yms]
+        yms = {(ymd[0], ymd[1]) for ymd in self.ymd}
+        years = {i[0] for i in self.ymd}
+        months = range(1, 13)
+        all_years_months = set(product(years, months))
+        missing = {
+            i for i in all_years_months if min(yms) < i < max(yms) and i not in yms
+        }
+        monthly = [self.month_stats(*ym) for ym in yms]
+        for m in missing:
+            monthly.append({"year": m[0], "month": m[1], "count": 0, "avg_dtr": 0})
+        return sorted(monthly, key=lambda x: (x["year"], x["month"]), reverse=True)
 
     def month_stats(self, year: int, month: int) -> dict[str, int | Optional[float]]:
         """Calculate monthly stats for books read during a particular month.

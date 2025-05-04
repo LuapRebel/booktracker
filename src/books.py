@@ -360,8 +360,7 @@ class BookScreen(EditableDeletableScreen):
     def _create_detailed_stats_table(self) -> None:
         table = self.query_one("#stats-detailed-table", DataTable)
         table.border_title = "Detailed Stats"
-        stats = self.stats.detailed_stats()
-        self._generate_formatted_table(table, stats)
+        self._generate_formatted_table(table, self.stats.detailed_stats())
 
     def _create_yearly_stats_table(self) -> None:
         table = self.query_one("#stats-yearly-table", DataTable)
