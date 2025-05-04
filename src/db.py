@@ -46,16 +46,6 @@ def dict_row_factory(cursor: Cursor, row: Row) -> dict[str, Any]:
     return {k: v for k, v in zip(fields, row)}
 
 
-if not Path(DB_PATH).is_file():
-    db = sqlite3.connect(DB_PATH)
-    for stmt in CREATE_STATEMENTS.values():
-        db.execute(stmt)
-    db.close()
-else:
-    db = sqlite3.connect(DB_PATH, detect_types=sqlite3.PARSE_DECLTYPES)
-    db.row_factory = dict_row_factory
-
-
 ## ADAPTERS
 def adapt_date_iso(val):
     """Adapt datetime.date to ISO 8601 date."""
@@ -84,3 +74,14 @@ def convert_datetime(val):
 
 sqlite3.register_converter("date", convert_date)
 sqlite3.register_converter("datetime", convert_datetime)
+
+if Path(DB_PATH).is_file():
+    db = sqlite3.connect(DB_PATH, detect_types=sqlite3.PARSE_DECLTYPES)
+    db.row_factory = dict_row_factory
+
+
+if __name__ == "__main__":
+    db = sqlite3.connect(DB_PATH)
+    for stmt in CREATE_STATEMENTS.values():
+        db.execute(stmt)
+    db.close()
