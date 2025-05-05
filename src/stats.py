@@ -50,7 +50,9 @@ class BookStats:
             i for i in all_years_months if min(yms) < i < max(yms) and i not in yms
         }
         for m in missing:
-            monthly.append({"year": m[0], "month": m[1], "count": 0, "avg_dtr": 0})
+            monthly.append(
+                {"year": m[0], "month": m[1], "per_week": 0, "count": 0, "avg_dtr": 0}
+            )
         return sorted(monthly, key=lambda x: (x["year"], x["month"]), reverse=True)
 
     def month_stats(self, year: int, month: int) -> dict[str, int | Optional[float]]:
