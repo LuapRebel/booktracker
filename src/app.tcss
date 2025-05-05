@@ -78,29 +78,26 @@ BookScreen {
     #stats-table-container {
       align: center top;
 
+      .stats-table {
+        height: auto;
+        width: auto;
+        border: round #bcbcbc;
+        border-title-align: center;
+        scrollbar-size: 0 1;
+      }
+
       #stats-yearly-table-container {
         align: center top;
-        height: auto;
+        height: 1fr;
 
         #stats-yearly-table {
-          height: auto;
-          width: auto;
-          border: round #bcbcbc;
-          border-title-align: center;
-          margin-bottom: 2;
+          margin-bottom: 1;
         }
       }
   
-      #stats-detailed-table-container {
+      #stats-monthly-table-container {
         align: center top;
-        
-        #stats-detailed-table {
-          height: auto;
-          width: auto;
-          border: round #bcbcbc;
-          border-title-align: center;
-          scrollbar-size: 0 1;
-        }
+        height: 2fr;
       }
     }
   }

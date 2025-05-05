@@ -75,6 +75,7 @@ def convert_datetime(val):
 sqlite3.register_converter("date", convert_date)
 sqlite3.register_converter("datetime", convert_datetime)
 
+
 if Path(DB_PATH).is_file():
     db = sqlite3.connect(DB_PATH, detect_types=sqlite3.PARSE_DECLTYPES)
     db.row_factory = dict_row_factory

@@ -88,7 +88,7 @@ class EditableDeletableScreen(Screen):
         self, event: DataTable.RowHighlighted
     ) -> None:
         row = event.data_table._data[event.row_key]
-        self.row_id = tuple(row.values())[0]
+        self.row_id = tuple(row.values())[-1]
         book = await self._get_book_from_row_id()
         if book:
             return book
@@ -289,10 +289,8 @@ class BookScreen(EditableDeletableScreen):
                 with Container(id="stats-table-container"):
                     with Container(id="stats-yearly-table-container"):
                         yield DataTable(classes="stats-table", id="stats-yearly-table")
-                    with Container(id="stats-detailed-table-container"):
-                        yield DataTable(
-                            classes="stats-table", id="stats-detailed-table"
-                        )
+                    with Container(id="stats-monthly-table-container"):
+                        yield DataTable(classes="stats-table", id="stats-monthly-table")
         yield Footer()
 
     async def on_mount(self) -> None:
@@ -300,38 +298,11 @@ class BookScreen(EditableDeletableScreen):
         if self.books:
             self.stats = BookStats(self.books)
             self._create_books_table(self.books)
-            self._create_yearly_stats_table()
-            self._create_detailed_stats_table()
+            self._create_stats_table("#stats-monthly-table", self.stats.monthly_stats())
+            self._create_stats_table("#stats-yearly-table", self.stats.yearly_stats())
         else:
             self.notify("To Add a Book, Press 'a'", severity="warning")
         self.set_focus(self.query_one("#books-table", DataTable))
-
-    def _create_books_table(self, books: list[Book]) -> None:
-        def datesort(date_started):
-            if date_started is None:
-                return date.today()
-            else:
-                return date_started
-
-        table = self.query_one("#books-table", DataTable)
-        table.clear(columns=True)
-        columns = [*Book.model_fields.keys(), *Book.model_computed_fields.keys()]
-        widths = {"title": 35, "author": 25}
-        for column in columns:
-            if column in widths:
-                width = widths[column]
-            else:
-                width = None
-            if column == "days_to_read":
-                label = "DTR"
-            else:
-                label = column.replace("_", " ").title()
-            table.add_column(label=label, width=width, key=column)
-        rows = [book.model_dump().values() for book in books]
-        table.add_rows(rows)
-        table.sort("date_started", key=datesort, reverse=True)
-        table.cursor_type = "row"
-        table.zebra_stripes = True
 
     async def filter_books(self, field: str, search_term: str) -> list[Book]:
         if field and search_term:
@@ -354,27 +325,46 @@ class BookScreen(EditableDeletableScreen):
     def action_push_add(self) -> None:
         self.app.push_screen(BookAddScreen())
 
-    def _generate_formatted_table(self, table: DataTable, stats: list[dict]) -> None:
+    def _create_books_table(self, books: list[Book]) -> None:
+        def datesort(date_started):
+            if date_started is None:
+                return date.today()
+            else:
+                return date_started
+
+        table = self.query_one("#books-table", DataTable)
         table.clear(columns=True)
-        columns = [key.replace("_", " ").title() for key in stats[0].keys()]
+        columns = [*Book.model_fields.keys(), *Book.model_computed_fields.keys()]
+        columns = columns[1:] + [columns[0]]  # move id to the end
+        widths = {"title": 35, "author": 25}
+        for column in columns:
+            if column in widths:
+                width = widths[column]
+            else:
+                width = None
+            label = column.replace("_", " ").title()
+            table.add_column(label=label, width=width, key=column)
+        rows = [list(book.model_dump().values()) for book in books]
+        for row in rows:
+            r = row[1:] + [row[0]]  # move id to the end
+            table.add_row(*r)
+        table.sort("date_started", key=datesort, reverse=True)
+        table.cursor_type = "row"
+        table.zebra_stripes = True
+
+    def _create_stats_table(self, id: str, data: list[dict]) -> None:
+        border_titles = {
+            "#stats-monthly-table": "Monthly Stats",
+            "#stats-yearly-table": "Yearly Stats",
+        }
+        table = self.query_one(id, DataTable)
+        table.clear(columns=True)
+        columns = [key.replace("_", " ").title() for key in data[0].keys()]
         table.add_columns(*columns)
-        rows = [stat.values() for stat in stats]
+        rows = [stat.values() for stat in data]
         for row in rows:
             styled_row = [Text(str(cell), justify="center") for cell in row]
             table.add_row(*styled_row)
+        table.border_title = border_titles[id]
         table.cursor_type = "none"
         table.zebra_stripes = True
-
-    def _create_detailed_stats_table(self) -> None:
-        table = self.query_one("#stats-detailed-table", DataTable)
-        table.border_title = "Detailed Stats"
-        self._generate_formatted_table(table, self.stats.detailed_stats())
-
-    def _create_yearly_stats_table(self) -> None:
-        table = self.query_one("#stats-yearly-table", DataTable)
-        table.border_title = "Yearly Stats"
-        years = sorted(
-            {stat["year"] for stat in self.stats.detailed_stats()}, reverse=True
-        )
-        stats = [self.stats.year_stats(year) for year in years]
-        self._generate_formatted_table(table, stats)
