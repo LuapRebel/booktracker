@@ -17,6 +17,7 @@ textual.log
 
 # pytest
 .pytest_cache/
+.coverage
 
 # mypy
 .mypy_cache/

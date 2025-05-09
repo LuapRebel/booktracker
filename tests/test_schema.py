@@ -15,8 +15,8 @@ def test_valid_book():
     assert book.title == "TITLE"
     assert book.author == "AUTHOR"
     assert book.status == "TBR"
-    assert book.date_started == "2025-01-01"
-    assert book.date_completed == "2025-01-02"
+    assert book.date_started.isoformat() == "2025-01-01"
+    assert book.date_completed.isoformat() == "2025-01-02"
     assert book.days_to_read == 2
 
 
