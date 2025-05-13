@@ -84,20 +84,40 @@ BookScreen {
         border: round #bcbcbc;
         border-title-align: center;
         scrollbar-size: 0 1;
+        text-align: center;
       }
 
       #stats-yearly-table-container {
         align: center top;
-        height: 1fr;
+        height: 3fr;
+      }
 
-        #stats-yearly-table {
-          margin-bottom: 1;
+      #stats-max-container {
+        align: center middle;
+        height: 1fr;
+        margin-top: 1;
+
+        #stats-max-horizontal-group {
+          align: center middle; 
+
+          #stats-max-year {
+            text-align: center;
+            width: 40%;
+            border: round #bcbcbc;
+            border-title-align: center;
+          }
+          #stats-max-year-month {
+            text-align: center;
+            width: 40%;
+            border: round #bcbcbc;
+            border-title-align: center;
+          }
         }
       }
   
       #stats-monthly-table-container {
-        align: center top;
-        height: 2fr;
+        align: center bottom;
+        height: 6fr;
       }
     }
   }

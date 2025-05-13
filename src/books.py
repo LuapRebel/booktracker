@@ -83,6 +83,7 @@ class EditableDeletableScreen(Screen):
 
     async def on_mount(self) -> None:
         self.books = await Book.load_books()
+        self.stats = BookStats(self.books)
 
     async def on_data_table_row_highlighted(
         self, event: DataTable.RowHighlighted
@@ -289,6 +290,14 @@ class BookScreen(EditableDeletableScreen):
                 with Container(id="stats-table-container"):
                     with Container(id="stats-yearly-table-container"):
                         yield DataTable(classes="stats-table", id="stats-yearly-table")
+                    with Container(id="stats-max-container"):
+                        with HorizontalGroup(id="stats-max-horizontal-group"):
+                            max_year = Static("", id="stats-max-year")
+                            max_year.border_title = "Max Year"
+                            max_year_month = Static("", id="stats-max-year-month")
+                            max_year_month.border_title = "Max Month"
+                            yield max_year
+                            yield max_year_month
                     with Container(id="stats-monthly-table-container"):
                         yield DataTable(classes="stats-table", id="stats-monthly-table")
         yield Footer()
@@ -296,12 +305,20 @@ class BookScreen(EditableDeletableScreen):
     async def on_mount(self) -> None:
         await super().on_mount()
         if self.books:
-            self.stats = BookStats(self.books)
+            # self.stats = BookStats(self.books)
             self._create_books_table(self.books)
             self._create_stats_table("#stats-monthly-table", self.stats.monthly_stats())
             self._create_stats_table("#stats-yearly-table", self.stats.yearly_stats())
         else:
             self.notify("To Add a Book, Press 'a'", severity="warning")
+        max_year = self.query_one("#stats-max-year", Static)
+        max_year.update(
+            f"{self.stats._get_max_year()[0]}: {self.stats._get_max_year()[1]}"
+        )
+        max_year_month = self.query_one("#stats-max-year-month", Static)
+        max_year_month.update(
+            f"{self.stats._get_max_year_month()[0]}-{self.stats._get_max_year_month()[1]}: 15"
+        )
         self.set_focus(self.query_one("#books-table", DataTable))
 
     async def filter_books(self, field: str, search_term: str) -> list[Book]:

@@ -1,6 +1,5 @@
 from datetime import date
 from itertools import product
-
 from statistics import mean
 from typing import Optional
 
@@ -134,3 +133,15 @@ class BookStats:
             "per_week": books_per_week,
             "avg_days_to_read": avg_days_to_read,
         }
+
+    def _get_max_year(self) -> tuple[int, ...]:
+        max_year = sorted(
+            self.yearly_stats(), key=lambda x: x["count"], reverse=True  # type: ignore
+        )[0]
+        return max_year["year"], max_year["count"]  # type: ignore
+
+    def _get_max_year_month(self) -> tuple[int, int, int]:
+        max_year_month = sorted(
+            self.monthly_stats(), key=lambda x: x["count"], reverse=True
+        )[0]
+        return max_year_month["year"], max_year_month["month"], max_year_month["count"]
