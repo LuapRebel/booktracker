@@ -99,12 +99,12 @@ BookScreen {
 
       #stats-yearly-table-container {
         align: center top;
-        height: 3fr;
+        height: auto;
       }
 
       #stats-max-container {
-        align: center middle;
-        height: 1fr;
+        align: center top;
+        height: auto;
         margin-top: 1;
 
         #stats-max-horizontal-group {
@@ -126,8 +126,8 @@ BookScreen {
       }
   
       #stats-monthly-table-container {
-        align: center bottom;
-        height: 6fr;
+        align: center top;
+        height: auto;
       }
     }
   }
