@@ -357,12 +357,14 @@ class BookScreen(EditableDeletableScreen):
         else:
             self.notify("To Add a Book, Press 'a'", severity="warning")
         max_year = self.query_one("#stats-max-year", Static)
-        max_year.update(
-            f"{self.stats._get_max_year()[0]}: {self.stats._get_max_year()[1]}"
-        )
+        max_year_year, max_year_count = self.stats._get_max_year()
+        max_year.update(f"{max_year_year}: {max_year_count}")
         max_year_month = self.query_one("#stats-max-year-month", Static)
+        max_year_month_year, max_year_month_month, max_year_month_count = (
+            self.stats._get_max_year_month()
+        )
         max_year_month.update(
-            f"{self.stats._get_max_year_month()[0]}-{self.stats._get_max_year_month()[1]}: 15"
+            f"{max_year_month_year}-{max_year_month_month}: {max_year_month_count}"
         )
         self.set_focus(self.query_one("#books-table", DataTable))
 
