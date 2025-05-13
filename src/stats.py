@@ -114,7 +114,7 @@ class BookStats:
             if year == date.today().year:
                 days = (date.today() - date(year, 1, 1)).days
                 books_per_month = round((count / days) * (364.25 / 12), 2)
-                books_per_week = round(count / days, 2) * 7
+                books_per_week = round((count / days) * 7, 2)
             else:
                 months = len({book[1] for book in self.ymd if book[0] == year})
                 weeks = months * 4.33

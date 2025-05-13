@@ -3,6 +3,16 @@ Header {
   text-style: bold;
 }
 
+MonthlyBookScreen {
+  align: center middle;
+
+  #monthly-books {
+      border: round #989898;
+      max-width: 50%;
+  }
+}
+
+
 BookScreen {
   #books-container {
     align: center top;

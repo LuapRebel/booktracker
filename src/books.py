@@ -1,3 +1,4 @@
+import calendar
 from datetime import date
 import logging
 import re
@@ -14,6 +15,7 @@ from textual.widgets import (
     Footer,
     Header,
     Input,
+    Markdown,
     Static,
 )
 
@@ -23,6 +25,35 @@ from stats import BookStats
 
 
 logger = logging.getLogger("booktracker")
+
+
+class MonthlyBookScreen(ModalScreen):
+    """Screen to display books read during a particular month chosen
+    from the Monthly Stats table.
+    """
+
+    BINDINGS = [("escape", "app.pop_screen", "Cancel")]
+
+    def __init__(self, year: str, month: str, books: list[Book]) -> None:
+        super().__init__()
+        self.year = year
+        self.month = calendar.month_name[int(month)]
+        self.books = books
+        self.markdown = self._make_markdown()
+
+    def compose(self) -> ComposeResult:
+        yield Markdown(markdown=self.markdown, id="monthly-books")
+        yield Footer()
+
+    def _make_markdown(self) -> str:
+        view_markdown = f"# {self.month} {self.year}: {len(self.books)} Books Read:\n"
+        for book in self.books:
+            book_md = (
+                f"- {book.author}: {book.title} - {book.days_to_read} days to read.\n"
+            )
+            view_markdown += book_md
+
+        return view_markdown
 
 
 class BookAddScreen(ModalScreen):
@@ -88,11 +119,26 @@ class EditableDeletableScreen(Screen):
     async def on_data_table_row_highlighted(
         self, event: DataTable.RowHighlighted
     ) -> None:
-        row = event.data_table._data[event.row_key]
-        self.row_id = tuple(row.values())[-1]
-        book = await self._get_book_from_row_id()
-        if book:
-            return book
+        if event.data_table.id == "books-table":
+            row = event.data_table._data[event.row_key]
+            self.row_id = tuple(row.values())[-1]
+            book = await self._get_book_from_row_id()
+            if book:
+                return book
+
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        if event.data_table.id == "stats-monthly-table":
+            row = event.data_table._data[event.row_key]
+            year, month = tuple(row.values())[0:2]
+            books = [
+                book
+                for book in self.books
+                if book.date_completed
+                and book.date_completed.year == int(year.plain)
+                and book.date_completed.month == int(month.plain)
+            ]
+            if books:
+                self.app.push_screen(MonthlyBookScreen(year.plain, month.plain, books))
 
     async def _get_book_from_row_id(self) -> Book:
         book = [book for book in self.books if book.id == self.row_id]
@@ -305,7 +351,6 @@ class BookScreen(EditableDeletableScreen):
     async def on_mount(self) -> None:
         await super().on_mount()
         if self.books:
-            # self.stats = BookStats(self.books)
             self._create_books_table(self.books)
             self._create_stats_table("#stats-monthly-table", self.stats.monthly_stats())
             self._create_stats_table("#stats-yearly-table", self.stats.yearly_stats())
@@ -383,5 +428,5 @@ class BookScreen(EditableDeletableScreen):
             styled_row = [Text(str(cell), justify="center") for cell in row]
             table.add_row(*styled_row)
         table.border_title = border_titles[id]
-        table.cursor_type = "none"
+        table.cursor_type = "row"
         table.zebra_stripes = True
