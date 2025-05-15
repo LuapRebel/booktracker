@@ -16,6 +16,7 @@ from textual.widgets import (
     Header,
     Input,
     Markdown,
+    RichLog,
     Static,
 )
 
@@ -88,14 +89,14 @@ class BookAddScreen(ModalScreen):
                 self.notify(f"{err['loc'][0]}: {err['msg']}")
         else:
             cur = db.cursor()
-            cur.execute(
-                f"INSERT INTO books({", ".join(validation_dict.keys())}) VALUES (?, ?, ?, ?, ?)",
+            newbook = cur.execute(
+                f"INSERT INTO books({", ".join(validation_dict.keys())}) VALUES (?, ?, ?, ?, ?) RETURNING *",
                 tuple(validation_dict.values()),
-            )
+            ).fetchone()
             db.commit()
             for i in inputs:
                 i.clear()
-            logger.info(f"Added book: {validation_dict}")
+            logger.info(f"Added: {newbook}")
             self.app.push_screen(BookScreen())
 
     def action_push_books(self) -> None:
@@ -183,9 +184,11 @@ class BookDeleteScreen(ModalScreen):
         def check_delete(delete: bool | None) -> None:
             if delete:
                 cur = db.cursor()
-                cur.execute("DELETE FROM books WHERE id=?", (self.book.id,))
+                deletedbook = cur.execute(
+                    "DELETE FROM books WHERE id=? RETURNING *", (self.book.id,)
+                ).fetchone()
                 db.commit()
-                logger.info(f"Deleted book: {self.book.model_dump()}")
+                logger.info(f"Deleted: {deletedbook}")
 
         self.app.push_screen(BookDeleteConfirmationScreen(), check_delete)
 
@@ -282,12 +285,12 @@ class BookEditScreen(EditableDeletableScreen):
             sql_prefix = "UPDATE books SET"
             sql_keys = ", ".join([f"{k} = ?" for k in validation_dict.keys()])
             sql_suffix = f"WHERE id = {self.book.id}"
-            full_sql = f"{sql_prefix} {sql_keys} {sql_suffix}"
+            full_sql = f"{sql_prefix} {sql_keys} {sql_suffix} RETURNING *"
             sql_values = tuple(validation_dict.values())
             cursor = db.cursor()
-            cursor.execute(full_sql, sql_values)
+            editedbook = cursor.execute(full_sql, sql_values).fetchone()
             db.commit()
-            logger.info(f"Edited book: {self.book.model_dump()} -> {validation_dict}")
+            logger.info(f"Edited: {self.book.model_dump()} -> {editedbook}")
             self.clear_inputs()
         finally:
             self.app.push_screen(BookScreen())
@@ -304,6 +307,7 @@ class BookScreen(EditableDeletableScreen):
         ("a", "push_add", "Add"),
         ("e", "push_edit", "Edit"),
         ("d", "push_delete", "Delete"),
+        ("l", "push_logs", "Logs"),
     ]
 
     def compose(self) -> ComposeResult:
@@ -389,6 +393,9 @@ class BookScreen(EditableDeletableScreen):
     def action_push_add(self) -> None:
         self.app.push_screen(BookAddScreen())
 
+    def action_push_logs(self) -> None:
+        self.app.push_screen(LogScreen())
+
     def _create_books_table(self, books: list[Book]) -> None:
         def datesort(date_started):
             if date_started is None:
@@ -432,3 +439,29 @@ class BookScreen(EditableDeletableScreen):
         table.border_title = border_titles[id]
         table.cursor_type = "row"
         table.zebra_stripes = True
+
+
+class LogScreen(ModalScreen):
+    """Screen to display logs file in RichLog"""
+
+    BINDINGS = [("escape", "app.pop_screen", "Cancel")]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.logs = self._read_logs()
+
+    def compose(self) -> ComposeResult:
+        yield Markdown("# Logs")
+        yield RichLog(wrap=True, highlight=True, markup=True, id="log-screen")
+        yield Footer()
+
+    def on_mount(self) -> None:
+        if self.logs:
+            richlog = self.query_one(RichLog)
+            for log in self.logs:
+                richlog.write(log)
+
+    def _read_logs(self) -> list[str]:
+        with open("logs/booktracker.log") as f:
+            logs = f.readlines()
+        return logs

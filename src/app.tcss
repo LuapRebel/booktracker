@@ -197,3 +197,10 @@ BookEditScreen {
       width: 30%;
   }
 }
+
+LogScreen {
+
+  RichLog {
+    background: black;
+  }
+}
