@@ -334,16 +334,16 @@ class BookScreen(EditableDeletableScreen):
             with Vertical(id="stats-container"):
                 yield Static("Stats", id="stats-container-header")
                 with Container(id="stats-table-container"):
-                    with Container(id="stats-yearly-table-container"):
-                        yield DataTable(classes="stats-table", id="stats-yearly-table")
                     with Container(id="stats-max-container"):
                         with HorizontalGroup(id="stats-max-horizontal-group"):
                             max_year = Static("", id="stats-max-year")
-                            max_year.border_title = "Max Year"
+                            max_year.border_title = "Max Yearly Count"
                             max_year_month = Static("", id="stats-max-year-month")
-                            max_year_month.border_title = "Max Month"
+                            max_year_month.border_title = "Max Monthly Count"
                             yield max_year
                             yield max_year_month
+                    with Container(id="stats-yearly-table-container"):
+                        yield DataTable(classes="stats-table", id="stats-yearly-table")
                     with Container(id="stats-monthly-table-container"):
                         yield DataTable(classes="stats-table", id="stats-monthly-table")
         yield Footer()
@@ -364,7 +364,7 @@ class BookScreen(EditableDeletableScreen):
             self.stats._get_max_year_month()
         )
         max_year_month.update(
-            f"{max_year_month_year}-{max_year_month_month}: {max_year_month_count}"
+            f"{calendar.month_name[int(max_year_month_month)]} {max_year_month_year}: {max_year_month_count}"
         )
         self.set_focus(self.query_one("#books-table", DataTable))
 
