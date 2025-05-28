@@ -121,7 +121,9 @@ BookScreen {
 
       #stats-yearly-table-container {
         align: center top;
+        height: auto;
         max-height: 30%;
+        margin-bottom: 1;
       }
   
       #stats-monthly-table-container {
