@@ -1,5 +1,5 @@
 import calendar
-from datetime import date
+from datetime import date, timedelta
 import logging
 import re
 
@@ -399,7 +399,7 @@ class BookScreen(EditableDeletableScreen):
     def _create_books_table(self, books: list[Book]) -> None:
         def datesort(date_started):
             if date_started is None:
-                return date.today()
+                return date.today() + timedelta(365)
             else:
                 return date_started
 
