@@ -397,11 +397,10 @@ class BookScreen(EditableDeletableScreen):
         self.app.push_screen(LogScreen())
 
     def _create_books_table(self, books: list[Book]) -> None:
-        def datesort(date_):
-            if date_ is None:
-                return date.today() + timedelta(365)
-            else:
-                return date_
+        def datesort(row_data):
+            future_date = date.today() + timedelta(365)
+            dates = tuple(d if d else future_date for d in row_data[-2:])
+            return dates
 
         table = self.query_one("#books-table", DataTable)
         table.clear(columns=True)
@@ -419,10 +418,7 @@ class BookScreen(EditableDeletableScreen):
         for row in rows:
             r = row[1:] + [row[0]]  # move id to the end
             table.add_row(*r)
-            table.sort()
-        table.sort("date_started", key=datesort, reverse=True).sort(
-            "status", reverse=True
-        )
+        table.sort("date_started", "date_completed", key=datesort, reverse=True)
         table.cursor_type = "row"
         table.zebra_stripes = True
 
