@@ -1,7 +1,12 @@
 import calendar
+import csv
 from datetime import date, timedelta
+import json
 import logging
+import os
+from pathlib import Path
 import re
+from typing import Iterable
 
 from pydantic import ValidationError
 from rich.text import Text
@@ -12,10 +17,14 @@ from textual.screen import ModalScreen, Screen
 from textual.widgets import (
     Button,
     DataTable,
+    DirectoryTree,
     Footer,
     Header,
     Input,
+    Label,
     Markdown,
+    RadioButton,
+    RadioSet,
     RichLog,
     Select,
     Static,
@@ -326,6 +335,7 @@ class BookScreen(EditableDeletableScreen):
         ("a", "push_add", "Add"),
         ("e", "push_edit", "Edit"),
         ("d", "push_delete", "Delete"),
+        ("x", "export_data", "Export Book Data"),
         ("l", "push_logs", "Logs"),
     ]
 
@@ -412,6 +422,9 @@ class BookScreen(EditableDeletableScreen):
     def action_push_add(self) -> None:
         self.app.push_screen(BookAddScreen())
 
+    def action_export_data(self) -> None:
+        self.app.push_screen(ExportScreen())
+
     def action_push_logs(self) -> None:
         self.app.push_screen(LogScreen())
 
@@ -483,3 +496,100 @@ class LogScreen(ModalScreen):
         with open("logs/booktracker.log") as f:
             logs = f.readlines()
         return logs
+
+
+class FilteredDirectoryTree(DirectoryTree):
+    def filter_paths(self, paths: Iterable[Path]) -> Iterable[Path]:
+        return [path for path in paths if not path.name.startswith(".")]
+
+
+class ExportScreen(ModalScreen):
+    BINDINGS = [("escape", "app.pop_screen", "Cancel")]
+
+    def __init__(
+        self,
+        root=f"/home/{os.environ.get("USER")}",
+        name: str | None = None,
+        id: str | None = None,
+        classes: str | None = None,
+    ) -> None:
+        super().__init__(name, id, classes)
+        self.title = "Save File"
+        self.root = root
+        self.folder = root
+
+    def compose(self) -> ComposeResult:
+        """
+        Create the widgets for the SaveFileDialog's user interface
+        """
+        yield Container(
+            Header(),
+            Label(f"Folder name: {self.root}", id="folder"),
+            FilteredDirectoryTree(self.root, id="directory"),
+            Input(placeholder="Filename", id="filename"),
+            RadioSet(
+                RadioButton(".csv", value=True, id="csv"),
+                RadioButton(".json", id="json"),
+                id="export-radio-set",
+            ),
+            Horizontal(
+                Button("Save File", variant="primary", id="save-file"),
+                Button("Cancel", variant="error", id="cancel-file"),
+                id="button-container",
+            ),
+            id="save-dialog",
+        )
+
+    def on_mount(self) -> None:
+        """
+        Focus the input widget so the user can name the file
+        """
+        self.query_one("#directory").focus()
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        """
+        Event handler for when the load file button is pressed
+        """
+        event.stop()
+        if event.button.id == "save-file":
+            filename = self.query_one("#filename", Input).value
+            full_path = Path(self.folder) / filename
+            extension = self.query_one("#export-radio-set", RadioSet).pressed_button.id  # type: ignore
+            if full_path and extension:
+                filename = f"{full_path}.{extension}"
+                if extension == "csv":
+                    await self._csv_data(filename=filename)
+                elif extension == "json":
+                    await self._json_data(filename=filename)
+            else:
+                self.notify("You must provide a Filename")
+        elif event.button.id == "cancel-file":
+            self.app.pop_screen()
+
+    @on(DirectoryTree.DirectorySelected)
+    def on_directory_selection(self, event: DirectoryTree.DirectorySelected) -> None:
+        """
+        Called when the DirectorySelected message is emitted from the DirectoryTree
+        """
+        self.folder = event.path
+        self.query_one("#folder", Label).update(f"Folder name: {self.folder}")
+
+    async def _csv_data(self, filename: str) -> None:
+        with open(filename, mode="w") as f:
+            writer = csv.writer(f)
+            writer.writerow(
+                [*Book.model_fields.keys(), *Book.model_computed_fields.keys()]
+            )
+            books = await Book.load_books()
+            rows = [list(book.model_dump().values()) for book in books]
+            writer.writerows(rows)
+        self.app.pop_screen()
+        self.notify(f"Data saved as {filename}")
+
+    async def _json_data(self, filename: str) -> None:
+        with open(filename, mode="w") as f:
+            books = await Book.load_books()
+            rows = [book.model_dump() for book in books]
+            json.dump(rows, f, indent=2, default=str)
+        self.app.pop_screen()
+        self.notify(f"Data saved as {filename}")

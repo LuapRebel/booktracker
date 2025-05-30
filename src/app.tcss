@@ -206,3 +206,54 @@ LogScreen {
     background: black;
   }
 }
+
+ExportScreen {
+  align: center middle;
+  background: $primary 30%;
+
+  #save-dialog {
+    align: center middle;
+    width: 30%;
+    height: 75%;
+    border: thick $background 70%;
+    background: $surface-lighten-1;
+
+    #folder {
+      margin: 1;
+    }
+    
+    #directory {
+      height: 50%;
+    }
+
+    #filename {
+      margin: 1;
+    }
+    
+    #export-radio-set {
+      align: center middle;
+      layout: horizontal;
+      width: 50%;
+      margin: 1;
+      
+      RadioButton {
+        content-align: center middle;
+        margin: 0 2;
+      }
+    }
+
+    #button-container {
+      content-align: center middle;
+
+      #save-file {
+        margin-left: 1;
+        margin-right: 1;
+        width: 1fr;
+      }
+
+      #cancel-file {
+        width: 1fr;
+      }
+    }
+  }
+}
