@@ -17,11 +17,12 @@ from textual.widgets import (
     Input,
     Markdown,
     RichLog,
+    Select,
     Static,
 )
 
 from db import db
-from schema import Book
+from schema import Book, Status
 from stats import BookStats
 
 
@@ -72,7 +73,13 @@ class BookAddScreen(ModalScreen):
         with add_screen_container:
             yield Input(placeholder="Title", id="title")
             yield Input(placeholder="Author (Lastname, First)", id="author")
-            yield Input(placeholder="Status (TBR, IN_PROGRESS, COMPLETED)", id="status")
+            yield Select.from_values(
+                values=Status._member_names_,
+                prompt="Status",
+                allow_blank=False,
+                value=Status.TBR,
+                id="status",
+            )
             yield Input(placeholder="Date Started (YYYY-MM-DD)", id="date-started")
             yield Input(placeholder="Date Completed (YYYY-MM-DD)", id="date-completed")
             yield Button("Submit", id="add")
@@ -81,7 +88,9 @@ class BookAddScreen(ModalScreen):
     @on(Button.Pressed, "#add")
     def book_submit_pressed(self):
         inputs = self.query(Input)
+        status = self.query_one(Select)
         validation_dict = {i.id.replace("-", "_"): i.value for i in inputs}
+        validation_dict[status.id] = status.value
         try:
             Book(**validation_dict)
         except ValidationError as e:
@@ -239,7 +248,13 @@ class BookEditScreen(EditableDeletableScreen):
         ):
             yield Input(placeholder="Title", id="title")
             yield Input(placeholder="Author (Lastname, First)", id="author")
-            yield Input(placeholder="Status (TBR, IN_PROGRESS, COMPLETED)", id="status")
+            yield Select.from_values(
+                values=Status._member_names_,
+                prompt="Status",
+                allow_blank=False,
+                value=Status.TBR,
+                id="status",
+            )
             yield Input(
                 placeholder="Date Started (YYYY-MM-DD)", id="date-started", value=None
             )
@@ -260,6 +275,8 @@ class BookEditScreen(EditableDeletableScreen):
                     value = self.book.model_dump().get(key, "")
                     if value:
                         i.value = str(value)
+            status = self.query_one(Select)
+            status.value = str(self.book.model_dump().get(status.id, ""))
         else:
             self.app.push_screen(BookScreen())
 
@@ -276,6 +293,8 @@ class BookEditScreen(EditableDeletableScreen):
             if input.id:
                 key = input.id.replace("-", "_")
                 validation_dict[key] = input.value
+        status = self.query_one(Select)
+        validation_dict[status.id] = str(status.value)
         try:
             Book(**validation_dict)
         except ValidationError as e:
