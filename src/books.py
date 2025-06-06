@@ -252,9 +252,11 @@ class BookEditScreen(EditableDeletableScreen):
         self.book = book
 
     def compose(self) -> ComposeResult:
-        with Container(
+        edit_screen_container = Container(
             classes="edit-screen-container", id="book-edit-screen-container"
-        ):
+        )
+        edit_screen_container.border_title = "Edit Book"
+        with edit_screen_container:
             yield Input(placeholder="Title", id="title")
             yield Input(placeholder="Author (Lastname, First)", id="author")
             yield Select.from_values(
