@@ -135,13 +135,25 @@ class BookStats:
         }
 
     def _get_max_year(self) -> tuple[int, ...]:
-        max_year = sorted(
-            self.yearly_stats(), key=lambda x: x["count"], reverse=True  # type: ignore
-        )[0]
-        return max_year["year"], max_year["count"]  # type: ignore
+        stats_available = any([all(s) for s in self.yearly_stats()])
+        if stats_available:
+            max_year = sorted(
+                self.yearly_stats(), key=lambda x: x["count"], reverse=True  # type: ignore
+            )[0]
+            return max_year["year"], max_year["count"]  # type: ignore
+        else:
+            return 0, 0
 
     def _get_max_year_month(self) -> tuple[int, int, int]:
-        max_year_month = sorted(
-            self.monthly_stats(), key=lambda x: x["count"], reverse=True
-        )[0]
-        return max_year_month["year"], max_year_month["month"], max_year_month["count"]
+        stats_available = any([all(s) for s in self.monthly_stats()])
+        if stats_available:
+            max_year_month = sorted(
+                self.monthly_stats(), key=lambda x: x["count"], reverse=True
+            )[0]
+            return (
+                max_year_month["year"],
+                max_year_month["month"],
+                max_year_month["count"],
+            )
+        else:
+            return 0, 0, 0

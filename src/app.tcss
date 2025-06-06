@@ -90,6 +90,7 @@ BookScreen {
 
       .stats-table {
         height: auto;
+        min-width: 80%;
         width: auto;
         border: round #bcbcbc;
         border-title-align: center;

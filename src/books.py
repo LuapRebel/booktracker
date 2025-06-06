@@ -385,22 +385,12 @@ class BookScreen(EditableDeletableScreen):
 
     async def on_mount(self) -> None:
         await super().on_mount()
-        if self.books:
-            self._create_books_table(self.books)
-            self._create_stats_table("#stats-monthly-table", self.stats.monthly_stats())
-            self._create_stats_table("#stats-yearly-table", self.stats.yearly_stats())
-        else:
-            self.notify("To Add a Book, Press 'a'", severity="warning")
-        max_year = self.query_one("#stats-max-year", Static)
-        max_year_year, max_year_count = self.stats._get_max_year()
-        max_year.update(f"{max_year_year}: {max_year_count}")
-        max_year_month = self.query_one("#stats-max-year-month", Static)
-        max_year_month_year, max_year_month_month, max_year_month_count = (
-            self.stats._get_max_year_month()
-        )
-        max_year_month.update(
-            f"{calendar.month_name[int(max_year_month_month)]} {max_year_month_year}: {max_year_month_count}"
-        )
+        if not self.books:
+            self.notify("To Add a Book, Press 'a'", severity="warning", timeout=20)
+        self._create_books_table(self.books)
+        self._create_stats_table("#stats-monthly-table", self.stats.monthly_stats())
+        self._create_stats_table("#stats-yearly-table", self.stats.yearly_stats())
+        self._create_max_data()
         self.set_focus(self.query_one("#books-table", DataTable))
 
     async def filter_books(self, field: str, search_term: str) -> list[Book]:
@@ -448,27 +438,57 @@ class BookScreen(EditableDeletableScreen):
                 width = None
             label = column.replace("_", " ").title()
             table.add_column(label=label, width=width, key=column)
-        rows = [list(book.model_dump().values()) for book in books]
-        for row in rows:
-            r = row[1:] + [row[0]]  # move id to the end
-            table.add_row(*r)
-        table.sort("date_started", "date_completed", key=datesort, reverse=True)
+        if self.books:
+            rows = [list(book.model_dump().values()) for book in books]
+            for row in rows:
+                r = row[1:] + [row[0]]  # move id to the end
+                table.add_row(*r)
+            table.sort("date_started", "date_completed", key=datesort, reverse=True)
         table.cursor_type = "row"
         table.zebra_stripes = True
+
+    def _create_max_data(self) -> None:
+        max_year = self.query_one("#stats-max-year", Static)
+        max_year_year, max_year_count = self.stats._get_max_year()
+        max_year.update(f"{max_year_year}: {max_year_count}")
+        max_year_month = self.query_one("#stats-max-year-month", Static)
+        max_year_month_year, max_year_month_month, max_year_month_count = (
+            self.stats._get_max_year_month()
+        )
+        max_year_month.update(
+            f"{calendar.month_name[int(max_year_month_month)]} {max_year_month_year}: {max_year_month_count}"
+        )
 
     def _create_stats_table(self, id: str, data: list[dict]) -> None:
         border_titles = {
             "#stats-monthly-table": "Monthly Stats",
             "#stats-yearly-table": "Yearly Stats",
         }
+        table_columns = {
+            "#stats-monthly-table": [
+                "Year",
+                "Month",
+                "Count",
+                "Per Week",
+                "Avg Days to Read",
+            ],
+            "#stats-yearly-table": [
+                "Year",
+                "Count",
+                "Per Month",
+                "Per Week",
+                "Avg Days to Read",
+            ],
+        }
         table = self.query_one(id, DataTable)
         table.clear(columns=True)
-        columns = [key.replace("_", " ").title() for key in data[0].keys()]
+        columns = table_columns[id]
         table.add_columns(*columns)
-        rows = [stat.values() for stat in data]
-        for row in rows:
-            styled_row = [Text(str(cell), justify="center") for cell in row]
-            table.add_row(*styled_row)
+        if data:
+            rows = [stat.values() for stat in data]
+            for row in rows:
+                styled_row = [Text(str(cell), justify="center") for cell in row]
+                table.add_row(*styled_row)
         table.border_title = border_titles[id]
         table.cursor_type = "row"
         table.zebra_stripes = True
