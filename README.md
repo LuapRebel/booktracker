@@ -23,6 +23,9 @@ git clone https://github.com/LuapRebel/booktracker.git
 cd booktracker
 uv sync
 source .venv/bin/activate
+
+# Create Database
+uv run src/db.py
 ```
 
 ## Usage
