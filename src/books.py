@@ -531,6 +531,8 @@ class FilteredDirectoryTree(DirectoryTree):
 
 
 class ExportScreen(ModalScreen):
+    """Screen providing interface for users to export book data in csv or json"""
+
     BINDINGS = [("escape", "app.pop_screen", "Cancel")]
 
     def __init__(

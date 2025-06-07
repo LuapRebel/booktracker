@@ -135,6 +135,9 @@ class BookStats:
         }
 
     def _get_max_year(self) -> tuple[int, ...]:
+        """Returns Year and Count for the year with the most books read.
+        Returns (0, 0) if no books have been completed.
+        """
         stats_available = any([all(s) for s in self.yearly_stats()])
         if stats_available:
             max_year = sorted(
@@ -145,6 +148,9 @@ class BookStats:
             return 0, 0
 
     def _get_max_year_month(self) -> tuple[int, int, int]:
+        """Returns Year, Month, and Count for the month with the most books read.
+        Returns (0, 0) if no books have been completed.
+        """
         stats_available = any([all(s) for s in self.monthly_stats()])
         if stats_available:
             max_year_month = sorted(
