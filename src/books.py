@@ -50,21 +50,26 @@ class MonthlyBookScreen(ModalScreen):
         self.year = year
         self.month = calendar.month_name[int(month)]
         self.books = books
-        self.markdown = self._make_markdown()
 
     def compose(self) -> ComposeResult:
-        yield Markdown(markdown=self.markdown, id="monthly-books")
+        yield DataTable(id="monthly-books")
         yield Footer()
 
-    def _make_markdown(self) -> str:
-        view_markdown = f"# {self.month} {self.year}: {len(self.books)} Books Read:\n"
-        for book in self.books:
-            book_md = (
-                f"- {book.author}: {book.title} - {book.days_to_read} days to read.\n"
-            )
-            view_markdown += book_md
+    def on_mount(self) -> None:
+        self._create_table()
 
-        return view_markdown
+    def _create_table(self) -> None:
+        table = self.query_one("#monthly-books", DataTable)
+        table.border_title = f"{self.month} {self.year}: {len(self.books)} Books Read"
+        table.clear(columns=True)
+        column_info = {"Author": 30, "Title": 50, "Days to Read": 12}
+        for column, width in column_info.items():
+            table.add_column(label=column, width=width, key=column)
+        rows = [dict(book.model_dump().items()) for book in self.books]
+        for row in rows:
+            r = (row["author"], row["title"], row["days_to_read"])
+            table.add_row(*r)
+        table.cursor_type = "none"
 
 
 class BookAddScreen(ModalScreen):

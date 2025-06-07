@@ -8,7 +8,9 @@ MonthlyBookScreen {
 
   #monthly-books {
       border: round #989898;
-      max-width: 50%;
+      border-title-align: center;
+      width: auto;
+      padding: 1;
   }
 }
 
