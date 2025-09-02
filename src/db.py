@@ -79,17 +79,11 @@ sqlite3.register_converter("datetime", convert_datetime)
 
 
 if Path(DB_PATH).is_file():
-    """Create database connection for the application"""
     db = sqlite3.connect(DB_PATH, detect_types=sqlite3.PARSE_DECLTYPES)
     db.row_factory = dict_row_factory
 
 
 if __name__ == "__main__":
-    """
-    Running this file as a standalone script will create the database.
-    If the database is already present, running this file as a script will not
-    overwrite the existing database tables.
-    """
     db = sqlite3.connect(DB_PATH)
     for stmt in CREATE_STATEMENTS.values():
         db.execute(stmt)

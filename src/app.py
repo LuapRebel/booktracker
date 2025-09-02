@@ -15,10 +15,6 @@ logger = logging.getLogger("booktracker")
 
 
 def setup_logging():
-    """
-    Create log file and parent directory if none exists.
-    Configure logging by importing config information.
-    """
     logs_path = Path("logs/booktracker.log")
     if not logs_path.is_file():
         Path("logs").mkdir()
@@ -30,8 +26,6 @@ def setup_logging():
 
 
 class BookTracker(App):
-    """Main application"""
-
     CSS_PATH = "app.tcss"
 
     SCREENS = {
