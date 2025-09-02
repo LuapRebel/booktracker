@@ -19,6 +19,8 @@ class Book(BaseModel, extra="ignore"):
     title: str = ""
     author: str = ""
     status: Status = Status.TBR
+    isbn: str = ""
+    cover: str = ""
     date_started: date | None = None
     date_completed: date | None = None
 
@@ -85,7 +87,7 @@ class Book(BaseModel, extra="ignore"):
             return None
 
     @classmethod
-    async def load_books(self) -> list["Book"]:
+    async def load_books(cls) -> list["Book"]:
         """Load Book data from database and create a Book object for each row.
 
         Returns:

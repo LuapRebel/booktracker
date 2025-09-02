@@ -3,6 +3,16 @@ Header {
   text-style: bold;
 }
 
+BookDisplayScreen {
+  align: center middle;
+
+  RichLog {
+    width: 40%;
+    height: auto;
+    scrollbar-size: 0 0;
+  }
+}
+
 MonthlyBookScreen {
   align: center middle;
 

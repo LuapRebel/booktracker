@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 from typing import Iterable
 
+from PIL import Image
 from pydantic import ValidationError
 from rich.text import Text
 from textual import on
@@ -36,6 +37,26 @@ from stats import BookStats
 
 
 logger = logging.getLogger("booktracker")
+
+
+class BookDisplayScreen(ModalScreen):
+    """Screen to display single book information, including cover."""
+
+    BINDINGS = [("escape", "app.pop_screen", "Cancel")]
+
+    def __init__(self, book: Book) -> None:
+        super().__init__()
+        self.book = book
+
+    def compose(self) -> ComposeResult:
+        yield RichLog(markup=True, highlight=True)
+        yield Footer()
+
+    def on_mount(self) -> None:
+        self.query_one(RichLog).write(self.book.model_dump())
+        if self.book.cover:
+            img = Image.open(self.book.cover)
+            img.show()
 
 
 class MonthlyBookScreen(ModalScreen):
@@ -86,7 +107,7 @@ class BookAddScreen(ModalScreen):
         add_screen_container.border_title = "Add A Book"
         with add_screen_container:
             yield Input(placeholder="Title", id="title")
-            yield Input(placeholder="Author (Lastname, First)", id="author")
+            yield Input(placeholder="Author (Firstname Lastname)", id="author")
             yield Select.from_values(
                 values=Status._member_names_,
                 prompt="Status",
@@ -96,15 +117,21 @@ class BookAddScreen(ModalScreen):
             )
             yield Input(placeholder="Date Started (YYYY-MM-DD)", id="date-started")
             yield Input(placeholder="Date Completed (YYYY-MM-DD)", id="date-completed")
+            yield Input(placeholder="ISBN", id="isbn")
             yield Button("Submit", id="add")
             yield Footer()
 
     @on(Button.Pressed, "#add")
     def book_submit_pressed(self):
         inputs = self.query(Input)
+        validation_dict = {}
+        for input in inputs:
+            if input.id:
+                key = input.id.replace("-", "_")
+                validation_dict[key] = input.value
         status = self.query_one(Select)
-        validation_dict = {i.id.replace("-", "_"): i.value for i in inputs}
         validation_dict[status.id] = status.value
+        validation_dict["cover"] = ""
         try:
             Book(**validation_dict)
         except ValidationError as e:
@@ -113,7 +140,7 @@ class BookAddScreen(ModalScreen):
         else:
             cur = db.cursor()
             newbook = cur.execute(
-                f"INSERT INTO books({", ".join(validation_dict.keys())}) VALUES (?, ?, ?, ?, ?) RETURNING *",
+                f"INSERT INTO books({", ".join(validation_dict.keys())}) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING *",
                 tuple(validation_dict.values()),
             ).fetchone()
             db.commit()
@@ -150,7 +177,14 @@ class EditableDeletableScreen(Screen):
             if book:
                 return book
 
-    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+    async def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        if event.data_table.id == "books-table":
+            row = event.data_table._data[event.row_key]
+            self.row_id = tuple(row.values())[-1]
+            book = await self._get_book_from_row_id()
+            if book:
+                self.app.push_screen(BookDisplayScreen(book))
+
         if event.data_table.id == "stats-monthly-table":
             row = event.data_table._data[event.row_key]
             year, month = tuple(row.values())[0:2]
@@ -263,7 +297,7 @@ class BookEditScreen(EditableDeletableScreen):
         edit_screen_container.border_title = "Edit Book"
         with edit_screen_container:
             yield Input(placeholder="Title", id="title")
-            yield Input(placeholder="Author (Lastname, First)", id="author")
+            yield Input(placeholder="Author (Firstname Lastname)", id="author")
             yield Select.from_values(
                 values=Status._member_names_,
                 prompt="Status",
@@ -279,6 +313,7 @@ class BookEditScreen(EditableDeletableScreen):
                 id="date-completed",
                 value=None,
             )
+            yield Input(placeholder="ISBN", id="isbn", value=None)
             yield Button("Submit", id="edit-submit")
             yield Footer()
 
@@ -428,29 +463,38 @@ class BookScreen(EditableDeletableScreen):
     def _create_books_table(self, books: list[Book]) -> None:
         def datesort(row_data):
             future_date = date.today() + timedelta(365)
-            dates = tuple(d if d else future_date for d in row_data[-2:])
+            dates = tuple(d if d else future_date for d in row_data)
             return dates
 
         table = self.query_one("#books-table", DataTable)
         table.clear(columns=True)
-        columns = [*Book.model_fields.keys(), *Book.model_computed_fields.keys()]
-        columns = columns[1:] + [columns[0]]  # move id to the end
-        widths = {"title": 35, "author": 25}
-        for column in columns:
+        columns = {
+            "title": "Title",
+            "author": "Author",
+            "status": "Status",
+            "date_started": "Start Date",
+            "date_completed": "Finish Date",
+            "days_to_read": "DTR",
+            "isbn": "ISBN",
+            "cover": "Cover",
+            "id": "ID",
+        }
+        widths = {"title": 45, "author": 25}
+        for column, title in columns.items():
             if column in widths:
                 width = widths[column]
             else:
                 width = None
-            label = column.replace("_", " ").title()
+            label = title
             table.add_column(label=label, width=width, key=column)
         if self.books:
-            rows = [list(book.model_dump().values()) for book in books]
+            rows = [book.model_dump() for book in books]
             for row in rows:
-                r = row[1:] + [row[0]]  # move id to the end
-                table.add_row(*r)
+                row_items = [row[k] for k in columns.keys()]
+                table.add_row(*row_items)
             table.sort("date_started", "date_completed", key=datesort, reverse=True)
-        table.cursor_type = "row"
-        table.zebra_stripes = True
+            table.cursor_type = "row"
+            table.zebra_stripes = True
 
     def _create_max_data(self) -> None:
         max_year = self.query_one("#stats-max-year", Static)
