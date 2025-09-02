@@ -12,6 +12,7 @@ wheels/
 # local
 sandbox/
 *books.db*
+src/static/covers/**
 logs/
 textual.log
 
