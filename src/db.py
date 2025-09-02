@@ -15,6 +15,8 @@ CREATE_STATEMENTS = {
         status TEXT,
         date_started DATE,
         date_completed DATE,
+        isbn TEXT,
+        cover BLOB,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
