@@ -55,7 +55,7 @@ class BookDisplayScreen(ModalScreen):
     def on_mount(self) -> None:
         self.query_one(RichLog).write(self.book.model_dump())
         if self.book.cover:
-            img = Image.open(self.book.cover)
+            img = Image.open(f"src/static/covers/{self.book.cover}")
             img.show()
 
 
