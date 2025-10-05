@@ -32,6 +32,7 @@ from textual.widgets import (
 )
 
 from db import db
+from openlibrary import OpenLibrarySearch
 from schema import Book, Status
 from stats import BookStats
 
@@ -118,8 +119,15 @@ class BookAddScreen(ModalScreen):
             yield Input(placeholder="Date Started (YYYY-MM-DD)", id="date-started")
             yield Input(placeholder="Date Completed (YYYY-MM-DD)", id="date-completed")
             yield Input(placeholder="ISBN", id="isbn")
+            with HorizontalGroup(id="cover-group"):
+                yield Input(placeholder="Cover", id="cover")
+                yield Button("Get Cover", id="get-cover")
             yield Button("Submit", id="add")
             yield Footer()
+
+    @on(Button.Pressed, "#get-cover")
+    def get_cover_pressed(self):
+        pass
 
     @on(Button.Pressed, "#add")
     def book_submit_pressed(self):
@@ -140,7 +148,7 @@ class BookAddScreen(ModalScreen):
         else:
             cur = db.cursor()
             newbook = cur.execute(
-                f"INSERT INTO books({", ".join(validation_dict.keys())}) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING *",
+                f"INSERT INTO books({", ".join(validation_dict.keys())}) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING *",
                 tuple(validation_dict.values()),
             ).fetchone()
             db.commit()
@@ -314,8 +322,15 @@ class BookEditScreen(EditableDeletableScreen):
                 value=None,
             )
             yield Input(placeholder="ISBN", id="isbn", value=None)
+            with HorizontalGroup(id="cover-group"):
+                yield Input(placeholder="Cover", id="cover", value=None)
+                yield Button("Get Cover", id="get-cover")
             yield Button("Submit", id="edit-submit")
             yield Footer()
+
+    @on(Button.Pressed, "#get-cover")
+    def get_cover_pressed(self):
+        pass
 
     def on_mount(self):
         if self.book:
