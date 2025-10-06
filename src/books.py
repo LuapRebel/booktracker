@@ -6,7 +6,9 @@ import logging
 import os
 from pathlib import Path
 import re
+import requests
 from typing import Iterable
+import webbrowser
 
 from PIL import Image
 from pydantic import ValidationError
@@ -32,6 +34,7 @@ from textual.widgets import (
 )
 
 from db import db
+from openlibrary import OpenLibrarySearch
 from schema import Book, Status
 from stats import BookStats
 
@@ -93,6 +96,64 @@ class MonthlyBookScreen(ModalScreen):
         table.cursor_type = "none"
 
 
+class GetCoverScreen(ModalScreen[int]):
+    """Screen to provide interface to View/Download Book covers."""
+
+    BINDINGS = [("escape", "app.pop_screen", "Cancel")]
+
+    def __init__(self, inputs: dict) -> None:
+        super().__init__()
+        self.inputs: dict = inputs
+
+        if self.inputs["isbn"]:
+            self.openlibrary = OpenLibrarySearch(isbn=self.inputs["isbn"])
+        else:
+            self.openlibrary = OpenLibrarySearch(
+                title=self.inputs["title"], author=self.inputs["author"]
+            )
+
+    def compose(self) -> ComposeResult:
+        get_cover_screen_container = Container(
+            classes="get-cover-screen-container", id="get-cover-screen-container"
+        )
+        get_cover_screen_container.border_title = "View/Download Covers"
+        with get_cover_screen_container:
+            yield RichLog(markup=True, highlight=True)
+            with HorizontalGroup(id="view-covers-group"):
+                yield Button("View Covers", id="view-covers")
+                if self.openlibrary.cover_ids:
+                    yield Select.from_values(
+                        values=self.openlibrary.cover_ids,
+                        prompt="Cover ID",
+                        allow_blank=True,
+                        id="cover-id",
+                    )
+            yield Footer()
+
+    def on_mount(self) -> None:
+        richlog = self.query_one(RichLog)
+        if self.openlibrary.cover_ids:
+            richlog.write(
+                f"""There were {len(self.openlibrary.cover_ids)} cover(s) available:\n"""
+            )
+            for id in self.openlibrary.cover_ids:
+                richlog.write(id)
+        else:
+            richlog.write("There were no covers available.")
+
+    def on_select_changed(self):
+        self.dismiss(self.query_one(Select).value)
+
+    @on(Button.Pressed, "#view-covers")
+    def view_covers_pressed(self):
+        urls = [
+            f"https://covers.openlibrary.org/b/id/{id}-L.jpg"
+            for id in self.openlibrary.cover_ids
+        ]
+        for url in urls:
+            webbrowser.open_new_tab(url)
+
+
 class BookAddScreen(ModalScreen):
     """Screen to provide inputs to create a new Book"""
 
@@ -118,11 +179,13 @@ class BookAddScreen(ModalScreen):
             yield Input(placeholder="Date Started (YYYY-MM-DD)", id="date-started")
             yield Input(placeholder="Date Completed (YYYY-MM-DD)", id="date-completed")
             yield Input(placeholder="ISBN", id="isbn")
+            with HorizontalGroup(id="cover-group"):
+                yield Input(placeholder="Cover", id="cover")
+                yield Button("Get Cover", id="get-cover")
             yield Button("Submit", id="add")
             yield Footer()
 
-    @on(Button.Pressed, "#add")
-    def book_submit_pressed(self):
+    def _collect_inputs(self) -> dict:
         inputs = self.query(Input)
         validation_dict = {}
         for input in inputs:
@@ -131,7 +194,20 @@ class BookAddScreen(ModalScreen):
                 validation_dict[key] = input.value
         status = self.query_one(Select)
         validation_dict[status.id] = status.value
-        validation_dict["cover"] = ""
+        return validation_dict
+
+    @on(Button.Pressed, "#get-cover")
+    def get_cover_pressed(self):
+        def get_cover_id(cover_id: int | None) -> None:
+            if cover_id:
+                cover_input = self.query_one("#cover", Input)
+                cover_input.value = f"{cover_id}-L.jpg"
+
+        self.app.push_screen(GetCoverScreen(self._collect_inputs()), get_cover_id)
+
+    @on(Button.Pressed, "#add")
+    def book_submit_pressed(self):
+        validation_dict = self._collect_inputs()
         try:
             Book(**validation_dict)
         except ValidationError as e:
@@ -144,9 +220,23 @@ class BookAddScreen(ModalScreen):
                 tuple(validation_dict.values()),
             ).fetchone()
             db.commit()
-            for i in inputs:
-                i.clear()
+
+            if newbook["cover"]:
+                cover_path = (
+                    Path(__file__).parent.resolve()
+                    / f"static/covers/{newbook['cover']}"
+                )
+                if not cover_path.is_file():
+                    base_url = "https://covers.openlibrary.org/b/id/"
+                    res = requests.get(f"{base_url}{newbook['cover']}")
+                    if res.status_code == 200:
+                        with open(cover_path, "wb") as f:
+                            f.write(res.content)
+
             logger.info(f"Added: {newbook}")
+            for i in self.query(Input):
+                i.clear()
+
             self.app.push_screen(BookScreen())
 
     def action_push_books(self) -> None:
@@ -314,8 +404,31 @@ class BookEditScreen(EditableDeletableScreen):
                 value=None,
             )
             yield Input(placeholder="ISBN", id="isbn", value=None)
+            with HorizontalGroup(id="cover-group"):
+                yield Input(placeholder="Cover", id="cover", value=None)
+                yield Button("Get Cover", id="get-cover")
             yield Button("Submit", id="edit-submit")
             yield Footer()
+
+    def _collect_inputs(self) -> dict:
+        inputs = self.query(Input)
+        validation_dict = {}
+        for input in inputs:
+            if input.id:
+                key = input.id.replace("-", "_")
+                validation_dict[key] = input.value
+        status = self.query_one(Select)
+        validation_dict[status.id] = status.value
+        return validation_dict
+
+    @on(Button.Pressed, "#get-cover")
+    def get_cover_pressed(self):
+        def get_cover_id(cover_id: int | None) -> None:
+            if cover_id:
+                cover_input = self.query_one("#cover", Input)
+                cover_input.value = f"{cover_id}-L.jpg"
+
+        self.app.push_screen(GetCoverScreen(self._collect_inputs()), get_cover_id)
 
     def on_mount(self):
         if self.book:
@@ -360,6 +473,19 @@ class BookEditScreen(EditableDeletableScreen):
             cursor = db.cursor()
             editedbook = cursor.execute(full_sql, sql_values).fetchone()
             db.commit()
+
+            if validation_dict["cover"]:
+                cover_path = (
+                    Path(__file__).parent.resolve()
+                    / f"static/covers/{validation_dict['cover']}"
+                )
+                if not cover_path.is_file():
+                    base_url = "https://covers.openlibrary.org/b/id/"
+                    res = requests.get(f"{base_url}{validation_dict['cover']}")
+                    if res.status_code == 200:
+                        with open(cover_path, "wb") as f:
+                            f.write(res.content)
+
             logger.info(f"Edited: {self.book.model_dump()} -> {editedbook}")
             self.clear_inputs()
         finally:
