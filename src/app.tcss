@@ -147,6 +147,26 @@ BookScreen {
   }
 }
 
+GetCoverScreen {
+  align: center middle;
+  
+  .get-cover-screen-container {
+      border: round #767676;
+      border-title-align: center;
+      height: 50%;
+      width: 30%;
+
+      #view-covers-group {
+        #view-covers {
+          width: 50%;
+        }
+        #cover-id {
+          width: 50%;
+        }
+      }
+  }
+}
+
 BookAddScreen {
   align: center middle;
   
