@@ -588,8 +588,10 @@ class BookScreen(EditableDeletableScreen):
 
     def _create_books_table(self, books: list[Book]) -> None:
         def datesort(row_data):
-            future_date = date.today() + timedelta(365)
-            dates = tuple(d if d else future_date for d in row_data)
+            added_date = date.today() + timedelta(365)
+            if not row_data[0] and row_data[1]:
+                added_date = date(2000, 1, 1)
+            dates = tuple(d if d else added_date for d in row_data)
             return dates
 
         table = self.query_one("#books-table", DataTable)

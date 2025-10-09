@@ -13,7 +13,7 @@ class BookStats:
         self.books = books
         self.ymd = [self._get_ymd(book) for book in books if self._get_ymd(book)[0]]
 
-    def _get_ymd(self, book: Book) -> tuple[int, int, int]:
+    def _get_ymd(self, book: Book) -> tuple[int, int, int | None]:
         """Get year, month and days_to_read from all books
 
         Args:
@@ -67,11 +67,15 @@ class BookStats:
                 `year`, `month`, `count`, per_week`, `avg_days_to_read` (all calculated by month)
         """
         books_read = [book for book in self.ymd if book[0] == year and book[1] == month]
-        count = len(books_read)
-        if count:
-            avg_days_to_read = round(mean([book[2] for book in books_read]), 2)
+        if books_read:
+            books_w_avg_days_to_read = [book[2] for book in books_read]
+            if all(books_w_avg_days_to_read):
+                avg_days_to_read = round(mean(books_w_avg_days_to_read), 2)
+            else:
+                avg_days_to_read = None
         else:
             avg_days_to_read = None
+        count = len(books_read)
         return {
             "year": year,
             "month": month,
@@ -121,7 +125,11 @@ class BookStats:
                 books_per_month = round(count / months, 2)
                 books_per_week = round(count / weeks, 2)
             if count:
-                avg_days_to_read = round(mean([book[2] for book in books_read]), 2)
+                avgs = [book[2] for book in books_read if book[2]]
+                if avgs:
+                    avg_days_to_read = round(mean(avgs), 2)
+                else:
+                    avg_days_to_read = None
             else:
                 avg_days_to_read = None
         else:
