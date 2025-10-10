@@ -107,6 +107,10 @@ class GetCoverScreen(ModalScreen[int]):
 
         if self.inputs["isbn"]:
             self.openlibrary = OpenLibrarySearch(isbn=self.inputs["isbn"])
+            if self.openlibrary.num_found == 0:
+                self.openlibrary = OpenLibrarySearch(
+                    title=self.inputs["title"], author=self.inputs["author"]
+                )
         else:
             self.openlibrary = OpenLibrarySearch(
                 title=self.inputs["title"], author=self.inputs["author"]
