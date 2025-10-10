@@ -541,10 +541,13 @@ class BookScreen(EditableDeletableScreen):
                 with Container(id="stats-table-container"):
                     with Container(id="stats-max-container"):
                         with HorizontalGroup(id="stats-max-horizontal-group"):
+                            total_books = Static("", id="stats-total-books")
+                            total_books.border_title = "Total Books"
                             max_year = Static("", id="stats-max-year")
-                            max_year.border_title = "Max Yearly Count"
+                            max_year.border_title = "Max Yearly"
                             max_year_month = Static("", id="stats-max-year-month")
-                            max_year_month.border_title = "Max Monthly Count"
+                            max_year_month.border_title = "Max Monthly"
+                            yield total_books
                             yield max_year
                             yield max_year_month
                     with Container(id="stats-yearly-table-container"):
@@ -629,6 +632,8 @@ class BookScreen(EditableDeletableScreen):
             table.zebra_stripes = True
 
     def _create_max_data(self) -> None:
+        total_books = self.query_one("#stats-total-books", Static)
+        total_books.update(str(self.stats._get_total_books()))
         max_year = self.query_one("#stats-max-year", Static)
         max_year_year, max_year_count = self.stats._get_max_year()
         max_year.update(f"{max_year_year}: {max_year_count}")

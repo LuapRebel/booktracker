@@ -142,6 +142,9 @@ class BookStats:
             "avg_days_to_read": avg_days_to_read,
         }
 
+    def _get_total_books(self) -> int:
+        return len(self.ymd)
+
     def _get_max_year(self) -> tuple[int, ...]:
         stats_available = any([all(s) for s in self.yearly_stats()])
         if stats_available:
