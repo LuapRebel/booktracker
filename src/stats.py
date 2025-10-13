@@ -50,11 +50,19 @@ class BookStats:
         }
         for m in missing:
             monthly.append(
-                {"year": m[0], "month": m[1], "per_week": 0, "count": 0, "avg_dtr": 0}
+                {
+                    "year": m[0],
+                    "month": m[1],
+                    "per_week": 0,
+                    "count": 0,
+                    "avg_dtr": "",
+                }
             )
         return sorted(monthly, key=lambda x: (x["year"], x["month"]), reverse=True)
 
-    def month_stats(self, year: int, month: int) -> dict[str, int | Optional[float]]:
+    def month_stats(
+        self, year: int, month: int
+    ) -> dict[str, int | Optional[float] | str]:
         """Calculate monthly stats for books read during a particular month.
 
         Args:
@@ -72,9 +80,9 @@ class BookStats:
             if all(books_w_avg_days_to_read):
                 avg_days_to_read = round(mean(books_w_avg_days_to_read), 2)
             else:
-                avg_days_to_read = None
+                avg_days_to_read = ""
         else:
-            avg_days_to_read = None
+            avg_days_to_read = ""
         count = len(books_read)
         return {
             "year": year,
@@ -99,7 +107,7 @@ class BookStats:
             reverse=True,
         )
 
-    def year_stats(self, year: int) -> dict[str, int | Optional[float]]:
+    def year_stats(self, year: int) -> dict[str, int | Optional[float] | str]:
         """Calculate yearly stats for books read during a particular year.
 
         Args:
@@ -129,11 +137,11 @@ class BookStats:
                 if avgs:
                     avg_days_to_read = round(mean(avgs), 2)
                 else:
-                    avg_days_to_read = None
+                    avg_days_to_read = ""
             else:
-                avg_days_to_read = None
+                avg_days_to_read = ""
         else:
-            count, books_per_month, books_per_week, avg_days_to_read = 0, 0, 0, 0
+            count, books_per_month, books_per_week, avg_days_to_read = "", "", "", ""
         return {
             "year": year,
             "count": count,
@@ -143,7 +151,7 @@ class BookStats:
         }
 
     def _get_total_books(self) -> int:
-        return len(self.ymd)
+        return len([book for book in self.books if book.status == "COMPLETED"])
 
     def _get_max_year(self) -> tuple[int, ...]:
         stats_available = any([all(s) for s in self.yearly_stats()])

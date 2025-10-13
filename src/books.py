@@ -595,10 +595,18 @@ class BookScreen(EditableDeletableScreen):
 
     def _create_books_table(self, books: list[Book]) -> None:
         def datesort(row_data):
-            added_date = date.today() + timedelta(365)
-            if not row_data[0] and row_data[1]:
-                added_date = date(2000, 1, 1)
-            dates = tuple(d if d else added_date for d in row_data)
+            """
+            Sort by date depending on status. Sorts by date_started, then
+            date_completed. For missing dates, dates are added to push COMPLETED
+            to the bottom and TBR/IN_PRORGRESS to the top.
+            """
+            if row_data[0] == "COMPLETED":
+                added_date = date(1900, 1, 1)
+            elif row_data[0] == "IN_PROGRESS":
+                added_date = date.today()
+            else:
+                added_date = date.today() + timedelta(365)
+            dates = tuple(d if d else added_date for d in row_data[1:])
             return dates
 
         table = self.query_one("#books-table", DataTable)
@@ -627,7 +635,9 @@ class BookScreen(EditableDeletableScreen):
             for row in rows:
                 row_items = [row[k] for k in columns.keys()]
                 table.add_row(*row_items)
-            table.sort("date_started", "date_completed", key=datesort, reverse=True)
+            table.sort(
+                "status", "date_started", "date_completed", key=datesort, reverse=True
+            )
             table.cursor_type = "row"
             table.zebra_stripes = True
 
