@@ -38,6 +38,7 @@ class OpenLibrarySearch:
         """
         base_url = "https://covers.openlibrary.org/b/id/"
         res = requests.get(f"{base_url}{id}-{size}.jpg")
+        res.raise_for_status()
         if res.status_code == 200:
             self.cover_id = id
             self.cover = res.content
@@ -78,8 +79,8 @@ class OpenLibrarySearch:
     @property
     def cover_ids(self, **kwargs) -> list[int | None]:
         """Return the cover ids for a book or None if one not available."""
-        res_json = self.response.json()
-        if res_json["numFound"]:
+        self.response.raise_for_status()
+        if self.response.json().get("numFound", None):
             return [
                 doc["cover_i"] for doc in self.filter_docs(**kwargs) if "cover_i" in doc
             ]

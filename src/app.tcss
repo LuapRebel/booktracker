@@ -119,19 +119,19 @@ BookScreen {
 
           #stats-total-books {
             text-align: center;
-            width: 33%;
+            width: 20%;
             border: round #bcbcbc;
             border-title-align: center;
           }
           #stats-max-year {
             text-align: center;
-            width: 33%;
+            width: 30%;
             border: round #bcbcbc;
             border-title-align: center;
           }
           #stats-max-year-month {
             text-align: center;
-            width: 33%;
+            width: 40%;
             border: round #bcbcbc;
             border-title-align: center;
           }

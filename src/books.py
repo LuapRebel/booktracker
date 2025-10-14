@@ -542,11 +542,11 @@ class BookScreen(EditableDeletableScreen):
                     with Container(id="stats-max-container"):
                         with HorizontalGroup(id="stats-max-horizontal-group"):
                             total_books = Static("", id="stats-total-books")
-                            total_books.border_title = "Total Books"
+                            total_books.border_title = "Total"
                             max_year = Static("", id="stats-max-year")
-                            max_year.border_title = "Max Yearly"
+                            max_year.border_title = "Max Year"
                             max_year_month = Static("", id="stats-max-year-month")
-                            max_year_month.border_title = "Max Monthly"
+                            max_year_month.border_title = "Max Month"
                             yield total_books
                             yield max_year
                             yield max_year_month
