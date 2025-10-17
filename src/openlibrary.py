@@ -25,10 +25,9 @@ class OpenLibrarySearch:
             text = str(v).replace(" ", "+")
             fields.append(f"{k}={text}")
         joined_fields = "&".join(fields)
-        url = base_url + joined_fields
-        print(f"Requesting {url}")
+        self.search_url = base_url + joined_fields
         self.kwargs = kwargs
-        self.response = requests.get(url)
+        self.response = self._make_request(self.search_url)
 
     def update_cover(self, id: int, size: str = "L"):
         """
@@ -36,17 +35,17 @@ class OpenLibrarySearch:
         If cover is available attributes `cover_id` (int) and `cover` (bytes)
         are updated.
         """
-        base_url = "https://covers.openlibrary.org/b/id/"
-        res = requests.get(f"{base_url}{id}-{size}.jpg")
-        res.raise_for_status()
-        if res.status_code == 200:
+        url = f"https://covers.openlibrary.org/b/id/{id}-{size}.jpg"
+        res = self._make_request(url)
+        if isinstance(res, requests.Response):
             self.cover_id = id
             self.cover = res.content
 
     def show_cover(self) -> None:
         """Open cover in default image viewing program."""
-        image = Image.open(io.BytesIO(self.cover))
-        image.show()
+        if self.cover:
+            image = Image.open(io.BytesIO(self.cover))
+            image.show()
 
     def save_cover(self, directory: Path = Path("."), size: str = "L") -> None:
         """
@@ -57,39 +56,55 @@ class OpenLibrarySearch:
                 with open(f"{directory}/{self.cover_id}-{size}.jpg", "wb") as f:
                     f.write(self.cover)
 
-    def filter_docs(self, **kwargs) -> list[dict]:
+    def filter_docs(self, **kwargs) -> list[dict | None]:
         """Filter all results by providing keyword arguments. Must be exact."""
-        return [doc for doc in self.docs if kwargs.items() <= doc.items()]
+        if self.docs:
+            return [doc for doc in self.docs if kwargs.items() <= doc.items()]
+        return []
+
+    def _make_request(self, url: str) -> requests.Response | str:
+        try:
+            res = requests.get(url)
+            res.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            return f"HTTP error occurred: {e}"
+        except requests.exceptions.RequestException as e:
+            return f"A request error occurred: {e}"
+        else:
+            return res
 
     @property
-    def num_found(self) -> int:
+    def num_found(self) -> int | None:
         """Number of matching search results."""
-        return self.response.json()["numFound"]
+        if isinstance(self.response, requests.Response):
+            return self.response.json()["numFound"]
 
     @property
-    def docs(self) -> list[dict]:
+    def docs(self) -> list[dict] | None:
         """Matching search results."""
-        return self.response.json()["docs"]
+        if isinstance(self.response, requests.Response):
+            return self.response.json()["docs"]
 
-    @property
-    def search_url(self) -> str:
-        """Original query URL"""
-        return self.response.url
+    # @property
+    # def search_url(self) -> str:
+    #     """Original query URL"""
+    #     if isinstance(self.response, requests.Response):
+    #         return self.response.url
 
     @property
     def cover_ids(self, **kwargs) -> list[int | None]:
         """Return the cover ids for a book or None if one not available."""
-        self.response.raise_for_status()
-        if self.response.json().get("numFound", None):
-            return [
-                doc["cover_i"] for doc in self.filter_docs(**kwargs) if "cover_i" in doc
-            ]
+        if isinstance(self.response, requests.Response):
+            if self.response.json().get("numFound", None):
+                if self.docs:
+                    return [doc["cover_i"] for doc in self.docs if "cover_i" in doc]
         return []
 
     @property
-    def search_keys(self) -> set[str]:
+    def search_keys(self) -> set[str] | None:
         """Available search keys given the data in the response"""
-        return {k for d in self.docs for k in d}
+        if self.docs:
+            return {k for d in self.docs for k in d}
 
     def __repr__(self) -> str:
         return f"{self.__class__!s}({self.kwargs!r})"

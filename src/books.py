@@ -136,14 +136,17 @@ class GetCoverScreen(ModalScreen[int]):
 
     def on_mount(self) -> None:
         richlog = self.query_one(RichLog)
-        if self.openlibrary.cover_ids:
-            richlog.write(
-                f"""There were {len(self.openlibrary.cover_ids)} cover(s) available:\n"""
-            )
-            for id in self.openlibrary.cover_ids:
-                richlog.write(id)
-        else:
-            richlog.write("There were no covers available.")
+        if isinstance(self.openlibrary.response, requests.Response):
+            if self.openlibrary.cover_ids:
+                richlog.write(
+                    f"""There were {len(self.openlibrary.cover_ids)} cover(s) available:\n"""
+                )
+                for id in self.openlibrary.cover_ids:
+                    richlog.write(id)
+            else:
+                richlog.write("There were no covers available.")
+        if isinstance(self.openlibrary.response, str):
+            richlog.write(self.openlibrary.response)
 
     def on_select_changed(self):
         self.dismiss(self.query_one(Select).value)
