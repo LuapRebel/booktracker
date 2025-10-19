@@ -22,8 +22,9 @@ class OpenLibrarySearch:
         base_url = "https://openlibrary.org/search.json?"
         fields = ["language=eng"]
         for k, v in kwargs.items():
-            text = str(v).replace(" ", "+")
-            fields.append(f"{k}={text}")
+            if v:
+                text = str(v).replace(" ", "+")
+                fields.append(f"{k}={text}")
         joined_fields = "&".join(fields)
         self.search_url = base_url + joined_fields
         self.kwargs = kwargs
