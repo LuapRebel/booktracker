@@ -42,26 +42,6 @@ from stats import BookStats
 logger = logging.getLogger("booktracker")
 
 
-class BookDisplayScreen(ModalScreen):
-    """Screen to display single book information, including cover."""
-
-    BINDINGS = [("escape", "app.pop_screen", "Cancel")]
-
-    def __init__(self, book: Book) -> None:
-        super().__init__()
-        self.book = book
-
-    def compose(self) -> ComposeResult:
-        yield RichLog(markup=True, highlight=True)
-        yield Footer()
-
-    def on_mount(self) -> None:
-        self.query_one(RichLog).write(self.book.model_dump())
-        if self.book.cover:
-            img = Image.open(f"src/static/covers/{self.book.cover}")
-            img.show()
-
-
 class MonthlyBookScreen(ModalScreen):
     """Screen to display books read during a particular month chosen
     from the Monthly Stats table.
@@ -279,8 +259,9 @@ class EditableDeletableScreen(Screen):
             row = event.data_table._data[event.row_key]
             self.row_id = tuple(row.values())[-1]
             book = await self._get_book_from_row_id()
-            if book:
-                self.app.push_screen(BookDisplayScreen(book))
+            if book and book.cover:
+                img = Image.open(f"src/static/covers/{book.cover}")
+                img.show()
 
         if event.data_table.id == "stats-monthly-table":
             row = event.data_table._data[event.row_key]
