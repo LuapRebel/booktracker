@@ -1,3 +1,4 @@
+from collections import Counter
 from datetime import date
 from itertools import product
 from statistics import mean
@@ -176,3 +177,9 @@ class BookStats:
             )
         else:
             return 0, 0, 0
+
+    def _get_top_authors(self) -> list[tuple[str, int]]:
+        """Returns Top 20 Authors by count."""
+        authors = [book.author for book in self.books if book.author]
+        author_count = Counter(authors)
+        return author_count.most_common(20)

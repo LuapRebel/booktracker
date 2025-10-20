@@ -557,6 +557,10 @@ class BookScreen(EditableDeletableScreen):
                         yield DataTable(classes="stats-table", id="stats-yearly-table")
                     with Container(id="stats-monthly-table-container"):
                         yield DataTable(classes="stats-table", id="stats-monthly-table")
+                    with Container(id="stats-top-authors-container"):
+                        yield DataTable(
+                            classes="stats-table", id="stats-top-authors-table"
+                        )
         yield Footer()
 
     async def on_mount(self) -> None:
@@ -564,9 +568,10 @@ class BookScreen(EditableDeletableScreen):
         if not self.books:
             self.notify("To Add a Book, Press 'a'", severity="warning", timeout=20)
         self._create_books_table(self.books)
+        self._create_max_data()
         self._create_stats_table("#stats-monthly-table", self.stats.monthly_stats())
         self._create_stats_table("#stats-yearly-table", self.stats.yearly_stats())
-        self._create_max_data()
+        self._create_top_authors_table()
         self.set_focus(self.query_one("#books-table", DataTable))
 
     async def filter_books(self, field: str, search_term: str) -> list[Book]:
@@ -662,6 +667,7 @@ class BookScreen(EditableDeletableScreen):
         border_titles = {
             "#stats-monthly-table": "Monthly Stats",
             "#stats-yearly-table": "Yearly Stats",
+            "#stats-top-authors-table": "Top Authors",
         }
         table_columns = {
             "#stats-monthly-table": [
@@ -678,6 +684,7 @@ class BookScreen(EditableDeletableScreen):
                 "Per Week",
                 "Avg Days to Read",
             ],
+            "#stats-top-authors-table": ["Author", "Count"],
         }
         table = self.query_one(id, DataTable)
         table.clear(columns=True)
@@ -689,6 +696,16 @@ class BookScreen(EditableDeletableScreen):
                 styled_row = [Text(str(cell), justify="center") for cell in row]
                 table.add_row(*styled_row)
         table.border_title = border_titles[id]
+        table.cursor_type = "row"
+        table.zebra_stripes = True
+
+    def _create_top_authors_table(self) -> None:
+        table = self.query_one("#stats-top-authors-table", DataTable)
+        table.clear(columns=True)
+        table.add_columns(*["Author", "Count"])
+        for author, count in self.stats._get_top_authors():
+            table.add_row(*(author, Text(str(count), justify="right")))
+        table.border_title = "Top Authors"
         table.cursor_type = "row"
         table.zebra_stripes = True
 
