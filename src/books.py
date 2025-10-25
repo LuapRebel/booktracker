@@ -591,8 +591,6 @@ class BookScreen(EditableDeletableScreen):
             """
             if row_data[0] == "COMPLETED":
                 added_date = date(1900, 1, 1)
-            elif row_data[0] == "IN_PROGRESS":
-                added_date = date.today()
             else:
                 added_date = date.today() + timedelta(365)
             dates = tuple(d if d else added_date for d in row_data[1:])
