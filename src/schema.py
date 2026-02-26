@@ -12,6 +12,7 @@ class Status(StrEnum):
     TBR = "TBR"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
+    DNF = "DNF"
 
 
 class Book(BaseModel, extra="ignore"):
