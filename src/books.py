@@ -1,15 +1,15 @@
 import calendar
 import csv
-from datetime import date, timedelta
 import json
 import logging
 import os
-from pathlib import Path
 import re
-import requests
-from typing import Iterable
 import webbrowser
+from datetime import date, timedelta
+from pathlib import Path
+from typing import Iterable
 
+import requests
 from PIL import Image
 from pydantic import ValidationError
 from rich.text import Text
@@ -37,7 +37,6 @@ from db import db
 from openlibrary import OpenLibrarySearch
 from schema import Book, Status
 from stats import BookStats
-
 
 logger = logging.getLogger("booktracker")
 
@@ -203,7 +202,7 @@ class BookAddScreen(ModalScreen):
         else:
             cur = db.cursor()
             newbook = cur.execute(
-                f"INSERT INTO books({", ".join(validation_dict.keys())}) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING *",
+                f"INSERT INTO books({', '.join(validation_dict.keys())}) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING *",
                 tuple(validation_dict.values()),
             ).fetchone()
             db.commit()
@@ -589,12 +588,35 @@ class BookScreen(EditableDeletableScreen):
             date_completed. For missing dates, dates are added to push COMPLETED
             to the bottom and TBR/IN_PRORGRESS to the top.
             """
+            status_order: dict[str, int] = {
+                "IN_PROGRESS": 4,
+                "TBR": 3,
+                "COMPLETED": 2,
+                "DNF": 1,
+            }
+            status: int | None = status_order.get(row_data[0])
+            past_date: date = date(1900, 1, 1)
+            future_date: date = date.today() + timedelta(365)
+
             if row_data[0] == "COMPLETED":
-                added_date = date(1900, 1, 1)
-            else:
-                added_date = date.today() + timedelta(365)
-            dates = tuple(d if d else added_date for d in row_data[1:])
-            return dates
+                # Start date and finish date COMPLETED
+                if row_data[1] and row_data[2]:
+                    return (status, row_data[1], row_data[2])
+                # No start date but finish date COMPLETED
+                elif not row_data[1] and row_data[2]:
+                    return (status, past_date, row_data[2])
+                # No Start date and no finish date COMPLETED
+                elif not row_data[1] and not row_data[2]:
+                    return (status, past_date, past_date)
+            # No Start date and no finish date TBR
+            elif row_data[0] == "TBR" and not row_data[1] and not row_data[2]:
+                return (status, future_date, future_date)
+            # No Start date and no finish date IN_PROGRESS
+            elif row_data[0] == "IN_PROGRESS" and not row_data[1] and not row_data[2]:
+                return (status, past_date, future_date)
+            # Start date but no finish date IN_PROGRESS, DNF
+            elif row_data[1] and not row_data[2]:
+                return (status, row_data[1], future_date)
 
         table = self.query_one("#books-table", DataTable)
         table.clear(columns=True)
@@ -725,7 +747,7 @@ class ExportScreen(ModalScreen):
 
     def __init__(
         self,
-        root=f"/home/{os.environ.get("USER")}",
+        root=f"/home/{os.environ.get('USER')}",
         name: str | None = None,
         id: str | None = None,
         classes: str | None = None,

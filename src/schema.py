@@ -1,16 +1,16 @@
+import re
 from datetime import date
 from enum import StrEnum
-import re
 from typing import Optional, Self
 
+from pydantic import BaseModel, computed_field, field_validator, model_validator
 
 from db import db
-from pydantic import BaseModel, computed_field, field_validator, model_validator
 
 
 class Status(StrEnum):
-    TBR = "TBR"
     IN_PROGRESS = "IN_PROGRESS"
+    TBR = "TBR"
     COMPLETED = "COMPLETED"
     DNF = "DNF"
 
