@@ -1,9 +1,8 @@
 import datetime
-from pathlib import Path
 import sqlite3
+from pathlib import Path
 from sqlite3 import Cursor, Row
 from typing import Any
-
 
 DB_PATH = Path(__file__).parent.resolve() / "books.db"
 CREATE_STATEMENTS = {

@@ -1,13 +1,12 @@
 import calendar
 import csv
 import json
-import logging
 import os
 import re
 import webbrowser
+from collections.abc import Iterable
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Iterable
 
 import requests
 from PIL import Image
@@ -37,8 +36,6 @@ from db import db
 from openlibrary import OpenLibrarySearch
 from schema import Book, Status
 from stats import BookStats
-
-logger = logging.getLogger("booktracker")
 
 
 class MonthlyBookScreen(ModalScreen):
@@ -219,7 +216,6 @@ class BookAddScreen(ModalScreen):
                         with open(cover_path, "wb") as f:
                             f.write(res.content)
 
-            logger.info(f"Added: {newbook}")
             for i in self.query(Input):
                 i.clear()
 
@@ -322,7 +318,6 @@ class BookDeleteScreen(ModalScreen):
                     "DELETE FROM books WHERE id=? RETURNING *", (self.book.id,)
                 ).fetchone()
                 db.commit()
-                logger.info(f"Deleted: {deletedbook}")
 
         self.app.push_screen(BookDeleteConfirmationScreen(), check_delete)
 
@@ -473,7 +468,6 @@ class BookEditScreen(EditableDeletableScreen):
                         with open(cover_path, "wb") as f:
                             f.write(res.content)
 
-            logger.info(f"Edited: {self.book.model_dump()} -> {editedbook}")
             self.clear_inputs()
         finally:
             self.app.push_screen(BookScreen())
@@ -491,7 +485,6 @@ class BookScreen(EditableDeletableScreen):
         ("e", "push_edit", "Edit"),
         ("d", "push_delete", "Delete"),
         ("x", "export_data", "Export Book Data"),
-        ("l", "push_logs", "Logs"),
     ]
 
     def compose(self) -> ComposeResult:
@@ -577,9 +570,6 @@ class BookScreen(EditableDeletableScreen):
 
     def action_export_data(self) -> None:
         self.app.push_screen(ExportScreen())
-
-    def action_push_logs(self) -> None:
-        self.app.push_screen(LogScreen())
 
     def _create_books_table(self, books: list[Book]) -> None:
         def datesort(row_data):
@@ -709,32 +699,6 @@ class BookScreen(EditableDeletableScreen):
         table.border_title = "Top Authors"
         table.cursor_type = "row"
         table.zebra_stripes = True
-
-
-class LogScreen(ModalScreen):
-    """Screen to display logs file in RichLog"""
-
-    BINDINGS = [("escape", "app.pop_screen", "Cancel")]
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.logs = self._read_logs()
-
-    def compose(self) -> ComposeResult:
-        yield Markdown("# Logs")
-        yield RichLog(wrap=True, highlight=True, markup=True, id="log-screen")
-        yield Footer()
-
-    def on_mount(self) -> None:
-        if self.logs:
-            richlog = self.query_one(RichLog)
-            for log in self.logs:
-                richlog.write(log)
-
-    def _read_logs(self) -> list[str]:
-        with open("logs/booktracker.log") as f:
-            logs = f.readlines()
-        return logs
 
 
 class FilteredDirectoryTree(DirectoryTree):

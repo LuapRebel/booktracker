@@ -1,7 +1,8 @@
 import io
 from pathlib import Path
-from PIL import Image
+
 import requests
+from PIL import Image
 
 
 class OpenLibrarySearch:
@@ -111,4 +112,4 @@ class OpenLibrarySearch:
         return f"{self.__class__!s}({self.kwargs!r})"
 
     def __str__(self) -> str:
-        return f"{self.__class__.__name__}({", ".join([f"{k}={v}" for k,v in self.kwargs.items()])})"
+        return f"{self.__class__.__name__}({', '.join([f'{k}={v}' for k, v in self.kwargs.items()])})"
