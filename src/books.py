@@ -607,6 +607,8 @@ class BookScreen(EditableDeletableScreen):
             # Start date but no finish date IN_PROGRESS, DNF
             elif row_data[1] and not row_data[2]:
                 return (status, row_data[1], future_date)
+            else:
+                return (status, row_data[1], row_data[2])
 
         table = self.query_one("#books-table", DataTable)
         table.clear(columns=True)
